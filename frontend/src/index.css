@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CrisisConnect — design system (Apple-inspired)
+   Calm, spacious, high-contrast type, soft depth, glass.
+   ============================================================ */
+@theme {
+  /* Brand */
+  --color-navy: #15314f;
+  --color-navy-700: #1f3a5c;
+  --color-navy-500: #2a4d74;
+  --color-teal: #16a394;
+  --color-teal-600: #0f877b;
+  --color-teal-50: #e8f6f4;
+
+  /* Neutrals (Apple-like greys) */
+  --color-ink: #0b1521;
+  --color-body: #3b4754;
+  --color-muted: #8a97a3;
+  --color-line: #e7ebf0;
+  --color-line-soft: #eef1f5;
+  --color-surface: #ffffff;
+  --color-canvas: #f4f6f9;
+
+  /* Severity */
+  --color-sev-critical: #e0574b;
+  --color-sev-high: #ef9b3e;
+  --color-sev-medium: #e7c33c;
+  --color-sev-low: #43bd8b;
+
+  /* Status accents */
+  --color-good: #2e9e6b;
+  --color-warn: #d98a3d;
+
+  --radius-xl: 22px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Inter, Roboto, system-ui, sans-serif;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-body);
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+}
+
+h1, h2, h3, h4 {
+  color: var(--color-ink);
+  letter-spacing: -0.022em;
+}
+
+/* Frosted glass surface */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Soft elevated shadows */
+.shadow-soft {
+  box-shadow: 0 1px 2px rgba(11, 21, 33, 0.04), 0 8px 24px -12px rgba(11, 21, 33, 0.12);
+}
+.shadow-pop {
+  box-shadow: 0 2px 6px rgba(11, 21, 33, 0.06), 0 24px 48px -20px rgba(11, 21, 33, 0.22);
+}
+
+/* Hairline border that stays crisp */
+.hairline { box-shadow: inset 0 0 0 1px var(--color-line); }
+
+/* Focus ring */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(22, 163, 148, 0.28);
+}
+
+/* Entrance animations */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade { animation: fade 0.4s ease both; }
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in { animation: slide-in-right 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ---- Ambient aurora backdrop (sits behind all content) ---- */
+.app-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.app-aurora::before,
+.app-aurora::after {
+  content: "";
+  position: absolute;
+  width: 54vw;
+  height: 54vw;
+  border-radius: 9999px;
+  filter: blur(110px);
+  opacity: 0.20;
+}
+.app-aurora::before {
+  background: radial-gradient(circle, #16a394 0, transparent 70%);
+  top: -14vw; left: -8vw;
+}
+.app-aurora::after {
+  background: radial-gradient(circle, #2a4d74 0, transparent 70%);
+  bottom: -18vw; right: -10vw;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app-aurora::before { animation: drift-a 24s ease-in-out infinite alternate; }
+  .app-aurora::after  { animation: drift-b 30s ease-in-out infinite alternate; }
+}
+@keyframes drift-a {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(6vw, 7vh) scale(1.18); }
+}
+@keyframes drift-b {
+  from { transform: translate(0, 0) scale(1.12); }
+  to   { transform: translate(-7vw, -6vh) scale(1); }
+}
+
+/* slow drift for the auth brand panel glow */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-glow { animation: glow-pan 18s ease-in-out infinite alternate; }
+}
+@keyframes glow-pan {
+  from { transform: translate(0, 0) scale(1); opacity: 0.15; }
+  to   { transform: translate(4%, 3%) scale(1.15); opacity: 0.22; }
+}
+
+/* gradient text accent */
+.text-gradient {
+  background: linear-gradient(120deg, #1f3a5c 0%, #16a394 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Slim, quiet scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: #c9d2db;
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: #aeb9c4; background-clip: content-box; }
+
+/* Leaflet tweaks so the map matches the product.
+   z-index:0 + relative gives the map its own stacking context so its internal
+   panes/controls never overlap sibling page content (e.g. the sidebar). */
+.leaflet-container { font-family: var(--font-sans); background: #dfe7ee; position: relative; z-index: 0; }
+.leaflet-control-zoom a {
+  border: none !important;
+  color: var(--color-navy-700) !important;
+}
+.leaflet-bar {
+  border: none !important;
+  box-shadow: 0 8px 24px -12px rgba(11, 21, 33, 0.3) !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0 24px 48px -20px rgba(11, 21, 33, 0.3) !important;
+}
+.leaflet-popup-content { margin: 14px 16px !important; }
+.leaflet-popup-tip { box-shadow: none !important; }

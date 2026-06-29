@@ -1,0 +1,88 @@
+const bcrypt = require("bcryptjs");
+const pool = require("../config/db");
+const { signToken } = require("../utils/jwt");
+
+const PUBLIC_FIELDS = "id, name, email, phone, role, created_at";
+
+async function register(req, res, next) {
+  try {
+    const { name, email, password, phone, role } = req.body;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "name, email, password and role are required" } });
+    }
+    if (!["citizen", "volunteer"].includes(role)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "role must be 'citizen' or 'volunteer'" } });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      `INSERT INTO users (name, email, password_hash, phone, role)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING ${PUBLIC_FIELDS}`,
+      [name, email, passwordHash, phone || null, role]
+    );
+
+    const user = result.rows[0];
+
+    if (role === "volunteer") {
+      await pool.query(`INSERT INTO volunteers (user_id) VALUES ($1)`, [user.id]);
+    }
+
+    const token = signToken(user);
+    return res.status(201).json({ token, user });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function login(req, res, next) {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "email and password are required" } });
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, email, phone, role, password_hash FROM users WHERE email = $1`,
+      [email]
+    );
+    const row = result.rows[0];
+
+    if (!row) {
+      return res.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } });
+    }
+
+    const match = await bcrypt.compare(password, row.password_hash);
+    if (!match) {
+      return res.status(401).json({ error: { code: "INVALID_CREDENTIALS", message: "Invalid email or password" } });
+    }
+
+    const user = { id: row.id, name: row.name, email: row.email, phone: row.phone, role: row.role };
+    const token = signToken(user);
+    return res.json({ token, user });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function me(req, res, next) {
+  try {
+    const result = await pool.query(`SELECT ${PUBLIC_FIELDS} FROM users WHERE id = $1`, [req.user.id]);
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "User not found" } });
+    }
+    return res.json({ user });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+function logout(req, res) {
+  // Stateless JWT — client discards the token. Placeholder for future refresh-token revocation.
+  return res.status(204).send();
+}
+
+module.exports = { register, login, me, logout };
