@@ -1,7 +1,7 @@
 import { useState } from "react";
 import * as Icons from "lucide-react";
-import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera } from "lucide-react";
-import { REQUEST_TYPE, REQUEST_STATUS, ASSIGNMENT_STATUS, fullDate } from "../lib/meta";
+import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera, Sparkles } from "lucide-react";
+import { REQUEST_TYPE, REQUEST_STATUS, ASSIGNMENT_STATUS, PRIORITY, priorityBand, fullDate } from "../lib/meta";
 import { Drawer, Badge, StatusTimeline, DetailRow } from "./ui";
 import LocationModal from "./LocationModal";
 
@@ -20,6 +20,8 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
   const type = REQUEST_TYPE[request.request_type] || REQUEST_TYPE.other;
   const Icon = Icons[type.icon] || Icons.CircleHelp;
   const st = REQUEST_STATUS[request.status] || { label: request.status, tone: "slate" };
+  const band = priorityBand(request.priority_score);
+  const pri = band ? PRIORITY[band] : null;
   const isClosed = request.status === "closed";
   const attachments = request.attachments || [];
 
@@ -49,6 +51,17 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
         <div className="mt-4 divide-y divide-line">
           <DetailRow icon={FileText} label="What's needed">{request.description}</DetailRow>
           <DetailRow icon={Users} label="People affected">{request.affected_count || 1}</DetailRow>
+          {role !== "citizen" && request.priority_score != null && (
+            <DetailRow icon={Sparkles} label="AI triage (suggested)">
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  {pri && <Badge tone={pri.tone} dot>{pri.label}</Badge>}
+                  <span className="text-[12px] text-muted">priority {request.priority_score}/100</span>
+                </div>
+                {request.ai_summary && <span className="text-[13px] text-body">{request.ai_summary}</span>}
+              </div>
+            </DetailRow>
+          )}
           <DetailRow icon={MapPin} label="Location">
             <div className="flex flex-wrap items-center gap-2">
               <span>{request.address || "Not provided"}</span>

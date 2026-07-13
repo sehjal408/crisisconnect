@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, MapPin, ChevronRight } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { incidents as incidentsApi, shelters as sheltersApi } from "../../api/services";
 import { SEVERITY, INCIDENT_TYPE, timeAgo } from "../../lib/meta";
 import AppShell from "../../components/AppShell";
 import CrisisMap from "../../components/CrisisMap";
 import RequestModal from "../../components/RequestModal";
 import RoadmapNote from "../../components/RoadmapNote";
-import { Card, Button, Badge, SeverityDot, PageHeader, Spinner, cx } from "../../components/ui";
+import { Card, Button, Badge, SeverityDot, PageHeader, Spinner, cx, AlertBanner } from "../../components/ui";
 
 const SEV_ORDER = ["critical", "high", "medium", "low"];
 
@@ -29,6 +30,7 @@ export default function MapPage() {
     [incidents, sev]
   );
   const openShelters = shelters.filter((s) => s.status !== "closed");
+  const criticalCount = incidents.filter((i) => i.severity === "critical").length;
 
   return (
     <AppShell>
@@ -36,8 +38,11 @@ export default function MapPage() {
         eyebrow="British Columbia"
         title="Crisis map"
         subtitle="Live incidents and open shelters across British Columbia."
+        live="Monitoring"
         actions={<Button icon={Plus} onClick={() => setModal(true)}>Request assistance</Button>}
       />
+
+      {criticalCount > 0 && <AlertBanner count={criticalCount} />}
 
       <RoadmapNote
         week="Weeks 9–10"
@@ -91,20 +96,25 @@ export default function MapPage() {
               <ul className="space-y-1">
                 {filtered.map((i) => {
                   const on = focus?.kind === "i" && focus.id === i.id;
+                  const t = INCIDENT_TYPE[i.type] || INCIDENT_TYPE.other;
+                  const TIcon = LucideIcons[t.icon] || LucideIcons.CircleAlert;
                   return (
                     <li key={i.id}>
                       <button
                         onClick={() => setFocus({ kind: "i", id: i.id, latitude: i.latitude, longitude: i.longitude })}
-                        className={cx("flex w-full items-start gap-3 rounded-lg px-1.5 py-1.5 text-left transition", on ? "bg-teal-50" : "hover:bg-line-soft")}
+                        className={cx("flex w-full items-center gap-3 rounded-lg px-1.5 py-1.5 text-left transition", on ? "bg-teal-50" : "hover:bg-line-soft")}
                       >
-                        <SeverityDot color={SEVERITY[i.severity]?.color} pulse={i.severity === "critical"} />
+                        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg" style={{ background: `${t.color}1a`, color: t.color }}>
+                          <TIcon size={16} className={t.anim} />
+                        </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13.5px] font-medium text-ink">{i.title}</p>
-                          <p className="text-[12px] text-muted">
-                            {INCIDENT_TYPE[i.type]?.label} · {timeAgo(i.updated_at)}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="truncate text-[13.5px] font-medium text-ink">{i.title}</p>
+                            <SeverityDot color={SEVERITY[i.severity]?.color} pulse={i.severity === "critical"} size={7} />
+                          </div>
+                          <p className="text-[12px] text-muted">{t.label} · {timeAgo(i.updated_at)}</p>
                         </div>
-                        <ChevronRight size={15} className={cx("mt-0.5 shrink-0", on ? "text-teal-600" : "text-muted")} />
+                        <ChevronRight size={15} className={cx("shrink-0", on ? "text-teal-600" : "text-muted")} />
                       </button>
                     </li>
                   );

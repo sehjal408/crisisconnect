@@ -8,14 +8,14 @@ export const SEVERITY = {
 };
 
 export const INCIDENT_TYPE = {
-  wildfire: { label: "Wildfire", icon: "Flame" },
-  flood: { label: "Flood", icon: "Waves" },
-  earthquake: { label: "Earthquake", icon: "Activity" },
-  weather: { label: "Severe weather", icon: "CloudLightning" },
-  road_closure: { label: "Road closure", icon: "TriangleAlert" },
-  evacuation: { label: "Evacuation", icon: "Siren" },
-  air_quality: { label: "Air quality", icon: "Wind" },
-  other: { label: "Other", icon: "CircleAlert" },
+  wildfire: { label: "Wildfire", icon: "Flame", color: "#ea6a3a", anim: "ico-flame" },
+  flood: { label: "Flood", icon: "Waves", color: "#2e86de", anim: "ico-wave" },
+  earthquake: { label: "Earthquake", icon: "Activity", color: "#c98a3a", anim: "ico-quake" },
+  weather: { label: "Severe weather", icon: "CloudLightning", color: "#6d77e6", anim: "ico-bolt" },
+  road_closure: { label: "Road closure", icon: "TriangleAlert", color: "#ef9b3e", anim: "ico-pulse" },
+  evacuation: { label: "Evacuation", icon: "Siren", color: "#e0574b", anim: "ico-pulse" },
+  air_quality: { label: "Air quality", icon: "Wind", color: "#6e9e7a", anim: "ico-drift" },
+  other: { label: "Other", icon: "CircleAlert", color: "#8a97a3", anim: "" },
 };
 
 export const REQUEST_TYPE = {
@@ -37,6 +37,23 @@ export const REQUEST_STATUS = {
   resolved: { label: "Resolved", tone: "green" },
   closed: { label: "Closed", tone: "slate" },
 };
+
+// AI triage priority bands (Week 9). Kept in sync with the backend rubric:
+// critical >=85, urgent 60-84, standard 30-59, low <30.
+export const PRIORITY = {
+  critical: { label: "Critical", tone: "red", color: "#e0574b" },
+  urgent: { label: "Urgent", tone: "amber", color: "#ef9b3e" },
+  standard: { label: "Standard", tone: "blue", color: "#2e86de" },
+  low: { label: "Low", tone: "slate", color: "#8a97a3" },
+};
+
+export function priorityBand(score) {
+  if (score == null) return null;
+  if (score >= 85) return "critical";
+  if (score >= 60) return "urgent";
+  if (score >= 30) return "standard";
+  return "low";
+}
 
 export const ASSIGNMENT_STATUS = {
   assigned: { label: "Assigned", tone: "amber" },

@@ -12,7 +12,10 @@ function incidentIcon(sev, pulse) {
     iconAnchor: [12, 12],
     popupAnchor: [0, -12],
     html: `<span style="position:relative;display:grid;place-items:center;width:24px;height:24px">
-      ${pulse ? `<span style="position:absolute;width:24px;height:24px;border-radius:9999px;background:${c};opacity:.45;animation:pulse-ring 1.8s ease-out infinite"></span>` : ""}
+      ${pulse ? `
+        <span style="position:absolute;width:24px;height:24px;border-radius:9999px;border:2px solid ${c};animation:sonar 2.2s ease-out infinite"></span>
+        <span style="position:absolute;width:24px;height:24px;border-radius:9999px;border:2px solid ${c};animation:sonar 2.2s ease-out infinite;animation-delay:1.1s"></span>
+      ` : ""}
       <span style="width:18px;height:18px;border-radius:9999px;background:${c};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.32)"></span>
     </span>`,
   });

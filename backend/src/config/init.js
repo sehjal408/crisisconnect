@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const db = require("./db");
+const { heuristicTriage } = require("../services/triage");
 
 const DEMO_PASSWORD = "Password123!";
 const DB_DIR = path.join(__dirname, "..", "..", "db");
@@ -72,7 +73,8 @@ async function initDb() {
     }
   }
 
-  // sample citizen requests (manual-triage; no AI fields)
+  // sample citizen requests — scored by the Week 9 AI triage layer (heuristic at
+  // seed time, so the demo shows priority ordering offline with no API cost).
   const citizenId = ids["citizen@crisisconnect.ca"];
   for (const rq of REQUESTS) {
     let incidentId = null;
@@ -80,10 +82,15 @@ async function initDb() {
       const inc = await db.query(`SELECT id FROM incidents WHERE title = $1 LIMIT 1`, [rq.incident]);
       incidentId = inc.rows[0] ? inc.rows[0].id : null;
     }
+    const { priority_score, ai_category, ai_summary } = heuristicTriage({
+      request_type: rq.type, description: rq.description, affected_count: rq.count,
+    });
     await db.query(
-      `INSERT INTO requests (incident_id, citizen_id, request_type, description, address, affected_count, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [incidentId, citizenId, rq.type, rq.description, rq.address, rq.count, rq.status]
+      `INSERT INTO requests (incident_id, citizen_id, request_type, description, address,
+         affected_count, priority_score, ai_category, ai_summary, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [incidentId, citizenId, rq.type, rq.description, rq.address, rq.count,
+       priority_score, ai_category, ai_summary, rq.status]
     );
   }
 

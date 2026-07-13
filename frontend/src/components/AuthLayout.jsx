@@ -1,58 +1,49 @@
-import { ShieldCheck, MapPin, Users } from "lucide-react";
 import { Logo } from "./ui";
+import DisasterBackdrop from "./DisasterBackdrop";
 
-const POINTS = [
-  { icon: MapPin, title: "One live picture", text: "Every active incident and open shelter on a single map." },
-  { icon: Users, title: "Help, coordinated", text: "Requests reach admins, and volunteers are matched fast." },
-  { icon: ShieldCheck, title: "Human-reviewed AI", text: "AI triages and suggests — an administrator always decides." },
-];
-
+// Immersive, full-screen "emergency operations network" entry screen.
+// A cinematic disaster scene fills the viewport; the form floats in a glass card.
 export default function AuthLayout({ children }) {
   return (
-    <div className="relative min-h-screen w-full lg:grid lg:grid-cols-[1.05fr_1fr]">
-      <div className="app-aurora" aria-hidden="true" />
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#081018] px-4 py-16">
+      {/* cinematic disaster scene */}
+      <DisasterBackdrop showLabel />
 
-      {/* Brand panel */}
+      {/* readability scrim / vignette */}
       <div
-        className="relative hidden overflow-hidden p-12 lg:flex lg:flex-col lg:justify-between"
-        style={{ background: "linear-gradient(155deg,#1f3a5c 0%,#15314f 45%,#0f877b 130%)" }}
-      >
-        <div
-          className="animate-glow pointer-events-none absolute inset-0 opacity-[0.15]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 20% 30%, #ffffff 0, transparent 40%), radial-gradient(circle at 80% 70%, #ffffff 0, transparent 35%)",
-          }}
-        />
+        className="pointer-events-none absolute inset-0"
+        style={{ background: "radial-gradient(115% 85% at 50% 6%, rgba(8,16,24,.05), rgba(6,12,20,.42) 60%, rgba(4,9,16,.78))" }}
+      />
+
+      {/* faint ops-center grid */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg,#fff 1px, transparent 1px)",
+          backgroundSize: "46px 46px",
+          WebkitMaskImage: "radial-gradient(circle at 50% 38%, #000, transparent 78%)",
+          maskImage: "radial-gradient(circle at 50% 38%, #000, transparent 78%)",
+        }}
+      />
+
+      {/* top bar */}
+      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
         <Logo light />
-        <div className="relative max-w-md">
-          <h1 className="text-[34px] font-bold leading-[1.15] text-white">
-            Coordinated crisis response for British Columbia.
-          </h1>
-          <p className="mt-4 text-[15px] leading-relaxed text-white/70">
-            CrisisConnect brings scattered emergency information into one place and
-            connects the people who need help with the volunteers who can give it.
-          </p>
-          <div className="mt-9 space-y-5">
-            {POINTS.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="flex gap-3.5">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/12 text-white">
-                  <Icon size={19} />
-                </span>
-                <div>
-                  <p className="text-[14px] font-semibold text-white">{title}</p>
-                  <p className="text-[13px] text-white/65">{text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <p className="relative text-[12px] text-white/45">Team SkillSpark · CSIS 4495 · Douglas College</p>
+        <span className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/70 backdrop-blur sm:inline-flex">
+          <span className="relative grid place-items-center" style={{ width: 7, height: 7 }}>
+            <span className="absolute rounded-full" style={{ width: 7, height: 7, background: "#34e3a0", animation: "pulse-ring 1.8s ease-out infinite" }} />
+            <span className="rounded-full" style={{ width: 7, height: 7, background: "#34e3a0" }} />
+          </span>
+          B.C. Emergency Network · Online
+        </span>
       </div>
 
-      {/* Form panel */}
-      <div className="flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm animate-rise">{children}</div>
+      {/* auth card — clean, high-contrast white panel */}
+      <div className="relative z-10 w-full max-w-[430px] animate-rise">
+        <div className="rounded-[24px] border border-white/70 bg-white/95 p-8 shadow-[0_40px_110px_-25px_rgba(0,0,0,.75)] backdrop-blur-md">
+          {children}
+        </div>
+        <p className="mt-5 text-center text-[12px] text-white/55">Team SkillSpark · CSIS 4495 · Douglas College</p>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { HandHelping, LifeBuoy } from "lucide-react";
+import { HandHelping, LifeBuoy, Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import AuthLayout from "../components/AuthLayout";
-import { Button, Field, TextInput, cx } from "../components/ui";
+import { cx } from "../components/ui";
 
 const HOME_BY_ROLE = { citizen: "/map", volunteer: "/volunteer", admin: "/admin" };
 
@@ -37,11 +37,14 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <h2 className="text-[26px] font-bold text-ink">Create your account</h2>
-      <p className="mt-1 text-[14px] text-muted">Join CrisisConnect in under a minute.</p>
+      <span className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-teal-600">
+        Join the network
+      </span>
+      <h2 className="mt-3.5 text-[26px] font-bold leading-tight text-ink">Create your account</h2>
+      <p className="mt-1 text-[13.5px] text-muted">Join CrisisConnect in under a minute.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           {ROLES.map((r) => {
             const active = form.role === r.value;
             const Icon = r.icon;
@@ -65,24 +68,37 @@ export default function RegisterPage() {
           })}
         </div>
 
-        <Field label="Full name">
-          <TextInput required value={form.name} onChange={update("name")} placeholder="Jane Doe" />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Email">
-            <TextInput type="email" required value={form.email} onChange={update("email")} placeholder="you@example.com" />
-          </Field>
-          <Field label="Phone">
-            <TextInput value={form.phone} onChange={update("phone")} placeholder="604-555-0100" />
-          </Field>
+        <div>
+          <label className="mb-1.5 block text-[12.5px] font-medium text-body">Full name</label>
+          <input className="auth-input" required value={form.name} onChange={update("name")} placeholder="Jane Doe" />
         </div>
-        <Field label="Password">
-          <TextInput type="password" required value={form.password} onChange={update("password")} placeholder="Create a password" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-medium text-body">Email</label>
+            <input className="auth-input" type="email" required value={form.email} onChange={update("email")} placeholder="you@example.com" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-medium text-body">Phone</label>
+            <input className="auth-input" value={form.phone} onChange={update("phone")} placeholder="604-555-0100" />
+          </div>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-[12.5px] font-medium text-body">Password</label>
+          <input className="auth-input" type="password" required value={form.password} onChange={update("password")} placeholder="Create a password" />
+        </div>
 
-        {error && <p className="rounded-lg bg-[#fdecea] px-3 py-2 text-[13px] font-medium text-[#b3392e]">{error}</p>}
+        {error && (
+          <p className="rounded-xl border border-[#f3c2bd] bg-[#fdecea] px-3 py-2 text-[13px] font-medium text-[#b3392e]">{error}</p>
+        )}
 
-        <Button type="submit" size="lg" loading={submitting} className="w-full">Create account</Button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-[#06121f] transition-all duration-200 focus-ring active:scale-[0.98] disabled:opacity-60"
+          style={{ background: "linear-gradient(120deg,#2dd4bf,#16a394)", boxShadow: "0 14px 30px -14px rgba(22,163,148,.55)" }}
+        >
+          {submitting ? <Loader2 size={17} className="animate-spin" /> : <>Create account <ArrowRight size={17} /></>}
+        </button>
       </form>
 
       <p className="mt-6 text-center text-[13px] text-muted">

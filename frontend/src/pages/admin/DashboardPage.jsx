@@ -7,7 +7,7 @@ import AppShell from "../../components/AppShell";
 import CrisisMap from "../../components/CrisisMap";
 import RoadmapNote from "../../components/RoadmapNote";
 import RequestDetailModal from "../../components/RequestDetailModal";
-import { Card, Badge, PageHeader, Spinner } from "../../components/ui";
+import { Card, Badge, PageHeader, Spinner, CountUp, AlertBanner } from "../../components/ui";
 
 const STATS = [
   { key: "active_incidents", label: "Active incidents", icon: TriangleAlert, tint: "#e0574b", to: "/admin/incidents" },
@@ -34,12 +34,15 @@ export default function AdminDashboardPage() {
   }, []);
 
   const attention = queue.filter((r) => !["resolved", "closed"].includes(r.status)).slice(0, 5);
+  const criticalCount = incidents.filter((i) => i.severity === "critical").length;
 
   if (loading) return <AppShell><Spinner label="Loading overview…" /></AppShell>;
 
   return (
     <AppShell>
-      <PageHeader eyebrow="Operations" title="Overview" subtitle="The live state of the response, at a glance." />
+      <PageHeader eyebrow="Operations" title="Overview" subtitle="The live state of the response, at a glance." live="Live" />
+
+      {criticalCount > 0 && <AlertBanner count={criticalCount} />}
 
       <RoadmapNote
         week="Week 11"
@@ -52,14 +55,14 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {STATS.map((s) => (
           <Link key={s.key} to={s.to}>
-            <Card className="h-full p-5" hover>
+            <Card className="group h-full p-5" hover glow>
               <div className="flex items-center justify-between">
-                <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: `${s.tint}14`, color: s.tint }}>
+                <span className="grid h-10 w-10 place-items-center rounded-xl transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3" style={{ background: `${s.tint}14`, color: s.tint }}>
                   <s.icon size={19} />
                 </span>
-                <ChevronRight size={16} className="text-muted" />
+                <ChevronRight size={16} className="text-muted transition-transform duration-300 group-hover:translate-x-0.5" />
               </div>
-              <p className="mt-4 text-[30px] font-bold leading-none text-gradient">{summary?.[s.key] ?? "—"}</p>
+              <p className="mt-4 text-[30px] font-bold leading-none text-shimmer"><CountUp value={summary?.[s.key]} /></p>
               <p className="mt-1.5 text-[13px] text-muted">{s.label}</p>
             </Card>
           </Link>

@@ -1,9 +1,11 @@
 const pool = require("../config/db");
+const { triageRequest } = require("../services/triage");
 
-// NOTE: automatic AI triage (severity scoring / classification / priority) is the
-// Week 9 "AI logic layer". For the Week 8 MVP, requests are triaged MANUALLY by an
-// administrator (review -> assign -> resolve). The ai_* / priority_score columns
-// exist in the schema (Week 5 design) but are left for the AI layer to populate later.
+// Week 9 "AI logic layer": incoming requests are auto-triaged on creation — the
+// AI (Claude Haiku, with a keyword-heuristic fallback) fills priority_score /
+// ai_category / ai_summary so the admin queue can be ordered by urgency. This is
+// HUMAN-IN-THE-LOOP: the score is only a suggestion; an administrator still
+// reviews, assigns, and resolves every request (review -> assign -> resolve).
 
 // Citizen: my own requests
 async function myRequests(req, res, next) {
@@ -26,14 +28,21 @@ async function createRequest(req, res, next) {
       return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "request_type and description are required" } });
     }
     const count = Number(affected_count) || 1;
+
+    // Week 9 AI auto-triage — never blocks the save; returns a heuristic result
+    // if the AI is unavailable, so a request always gets a priority.
+    const { priority_score, ai_category, ai_summary } = await triageRequest({
+      request_type, description, affected_count: count,
+    });
+
     const result = await pool.query(
       `INSERT INTO requests
          (incident_id, citizen_id, request_type, description, address, latitude, longitude,
-          affected_count, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+          affected_count, priority_score, ai_category, ai_summary, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending')
        RETURNING *`,
       [incident_id || null, req.user.id, request_type, description, address || null,
-       latitude || null, longitude || null, count]
+       latitude || null, longitude || null, count, priority_score, ai_category, ai_summary]
     );
     return res.status(201).json({ request: result.rows[0] });
   } catch (err) {
@@ -59,7 +68,7 @@ async function listRequests(req, res, next) {
        LEFT JOIN incidents i ON i.id = r.incident_id
        LEFT JOIN assignments a ON a.request_id = r.id
        ${where}
-       ORDER BY r.created_at DESC`,
+       ORDER BY r.priority_score DESC NULLS LAST, r.created_at DESC`,
       values
     );
     const requests = result.rows.map(({ assignment_id, assignment_volunteer_id, assignment_status, ...r }) => ({

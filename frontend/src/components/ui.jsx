@@ -1,6 +1,6 @@
 // Reusable UI primitives — the CrisisConnect design system.
 import { useEffect, useRef, useState } from "react";
-import { Loader2, X, Check } from "lucide-react";
+import { Loader2, X, Check, TriangleAlert } from "lucide-react";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
 
@@ -62,7 +62,7 @@ export function Button({ variant = "primary", size = "md", icon: Icon, loading, 
 /* ----------------------------------------------------------- Card
    Cards reveal themselves on scroll (IntersectionObserver + transition, so the
    reveal never fights the hover lift). Pass reveal={false} to opt out. */
-export function Card({ className, children, hover, reveal = true, ...rest }) {
+export function Card({ className, children, hover, glow, reveal = true, ...rest }) {
   const ref = useRef(null);
   const [shown, setShown] = useState(!reveal);
   useEffect(() => {
@@ -81,7 +81,7 @@ export function Card({ className, children, hover, reveal = true, ...rest }) {
       ref={ref}
       className={cx(
         "rounded-[20px] bg-white hairline shadow-soft transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-        hover && "hover:shadow-pop hover:-translate-y-0.5",
+        hover && (glow ? "card-glow hover:-translate-y-1" : "hover:shadow-pop hover:-translate-y-0.5"),
         !shown && "translate-y-4 opacity-0",
         className
       )}
@@ -123,6 +123,66 @@ export function SeverityDot({ color, pulse, size = 10 }) {
       <span className="rounded-full" style={{ width: size, height: size, background: color }} />
     </span>
   );
+}
+
+/* ----------------------------------------------------------- LivePill (pulsing "live monitoring" indicator) */
+export function LivePill({ children = "Live", color = "#16a394", className }) {
+  return (
+    <span
+      className={cx("inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] hairline backdrop-blur", className)}
+      style={{ color }}
+    >
+      <span className="relative grid place-items-center" style={{ width: 8, height: 8 }}>
+        <span className="absolute rounded-full" style={{ width: 8, height: 8, background: color, animation: "pulse-ring 1.8s ease-out infinite" }} />
+        <span className="rounded-full" style={{ width: 8, height: 8, background: color }} />
+      </span>
+      {children}
+    </span>
+  );
+}
+
+/* ----------------------------------------------------------- AlertBanner (animated hazard strip) */
+export function AlertBanner({ count = 1, className }) {
+  return (
+    <div className={cx("alert-strip mb-5 flex items-center gap-3 rounded-2xl px-4 py-3 text-white", className)}>
+      <span className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20">
+        <TriangleAlert size={18} />
+        <span className="absolute inset-0 rounded-full" style={{ background: "rgba(255,255,255,0.45)", animation: "pulse-ring 1.6s ease-out infinite" }} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[13px] font-extrabold uppercase tracking-[0.1em]">Critical alert</p>
+        <p className="text-[12.5px] text-white/90">{count} critical incident{count > 1 ? "s" : ""} active — response is being prioritised.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------- CountUp (animated number) */
+export function useCountUp(target, { duration = 1100 } = {}) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    const n = Number(target);
+    if (target == null || Number.isNaN(n)) { setVal(null); return; }
+    let raf, start;
+    const step = (ts) => {
+      start = start || ts;
+      const k = Math.min((ts - start) / duration, 1);
+      setVal(Math.round((1 - Math.pow(1 - k, 3)) * n));
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+}
+export function CountUp({ value, fallback = "—", className }) {
+  const v = useCountUp(value);
+  return <span className={className}>{v == null ? fallback : v}</span>;
+}
+
+/* ----------------------------------------------------------- Skeleton loader */
+export function Skeleton({ className }) {
+  return <div className={cx("skeleton rounded-lg", className)} />;
 }
 
 /* ----------------------------------------------------------- Field / inputs */
@@ -199,12 +259,17 @@ export function EmptyState({ icon: Icon, title, hint, action }) {
 }
 
 /* ----------------------------------------------------------- Section heading */
-export function PageHeader({ eyebrow, title, subtitle, actions }) {
+export function PageHeader({ eyebrow, title, subtitle, actions, gradient, live }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        {eyebrow && <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-teal-600">{eyebrow}</p>}
-        <h1 className="text-[26px] font-bold leading-tight text-ink">{title}</h1>
+        {eyebrow && (
+          <p className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-teal-600">
+            {eyebrow}
+            {live && <LivePill>{typeof live === "string" ? live : "Live"}</LivePill>}
+          </p>
+        )}
+        <h1 className={cx("text-[26px] font-bold leading-tight", gradient ? "text-shimmer" : "text-ink")}>{title}</h1>
         {subtitle && <p className="mt-1 text-[14px] text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

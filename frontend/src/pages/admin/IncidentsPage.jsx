@@ -63,8 +63,8 @@ export default function AdminIncidentsPage() {
           return (
             <Card key={i.id} className="flex cursor-pointer flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between" hover onClick={() => setActive(i)}>
               <div className="flex items-center gap-3.5">
-                <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: `${SEVERITY[i.severity]?.color}14`, color: SEVERITY[i.severity]?.color }}>
-                  <Icon size={19} />
+                <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: `${t.color}1a`, color: t.color }}>
+                  <Icon size={19} className={t.anim} />
                 </span>
                 <div>
                   <div className="flex items-center gap-2">

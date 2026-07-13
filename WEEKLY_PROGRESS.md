@@ -1,8 +1,8 @@
 # CrisisConnect — Weekly Build Log
 
-How the project progressed, week by week. This build is delivered to the
-**Week 8 "Midterm MVP"** milestone — and stops there on purpose. Weeks 9–13 are
-listed at the end as the planned remaining work (not built yet).
+How the project progressed, week by week. This build delivers the
+**Week 8 "Midterm MVP"** milestone plus the **Week 9 AI auto-triage layer**.
+Weeks 10–13 are listed at the end as the planned remaining work (not built yet).
 
 ---
 
@@ -31,17 +31,29 @@ listed at the end as the planned remaining work (not built yet).
   the app uses a genuine Postgres database (schema, constraints, the generated
   `available_beds` column, transactions) with **no server to install**. It applies
   `schema.sql` + `seed.sql` and seeds demo users/requests on first start.
-- **Manual triage** — requests are reviewed and prioritised by the admin. The
-  `ai_*` / `priority_score` columns exist in the schema but are left for the
-  Week 9 AI layer to populate.
+- **Admin triage** — requests are reviewed, prioritised, and assigned by the
+  admin. The `ai_*` / `priority_score` columns are populated by the Week 9 AI
+  layer (below).
 - Shelters and incidents are **read-only** views in this milestone.
 
-### Scope note — intentionally NOT in this build (Weeks 9–13)
-To stay true to the timeline, these were deliberately left out:
-- **Week 9** — AI logic layer (LLM severity/classification/priority) + start of
-  live data-source ingestion.
-- **Week 10** — remaining live feeds + de-duplication & admin verification;
-  shelter occupancy management, low-stock alerts, notifications.
+## Week 9 — AI auto-triage ✅
+- **AI logic layer** — every incoming citizen request is automatically scored for
+  urgency the moment it is submitted, filling the `priority_score`, `ai_category`,
+  and `ai_summary` columns. The admin **Request queue** is ordered by priority so
+  the most urgent needs rise to the top, each with a one-line AI summary.
+- **Real model + safe fallback** — scoring uses **Claude (Haiku)** through a
+  structured tool call, guided by an explicit rubric. If there is no API key, no
+  network, or the call errors/times out, it falls back to a deterministic keyword
+  heuristic, so a request is **never** blocked from saving — the app still runs
+  fully offline this way.
+- **Human-in-the-loop** — the AI output is only a suggestion. An administrator
+  still reviews, assigns, and resolves every request; the AI never dispatches.
+
+### Scope note — intentionally NOT in this build (Weeks 10–13)
+To stay true to the timeline, these remain planned:
+- **Week 10** — live data-source ingestion from official B.C. feeds, feed
+  de-duplication & admin verification; shelter occupancy management, low-stock
+  alerts, notifications.
 - **Week 11** — analytics charts, impact metrics, PDF/CSV export, automated tests,
   hosted deployment.
 - **Week 12** — QA & demo polish.
@@ -52,5 +64,5 @@ To stay true to the timeline, these were deliberately left out:
 ## Status
 - Runs today on a real (embedded) PostgreSQL database via `npm run dev` in both
   `backend` and `frontend` — see `README.md`.
-- Delivered exactly to the Week 8 midterm milestone; Weeks 9–13 are the planned
-  next steps above.
+- Delivered through the Week 9 AI auto-triage milestone; Weeks 10–13 are the
+  planned next steps above.

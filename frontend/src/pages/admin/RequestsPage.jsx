@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Icons from "lucide-react";
-import { UserCheck, Check, Navigation, ChevronRight } from "lucide-react";
+import { UserCheck, Check, Navigation, ChevronRight, Sparkles } from "lucide-react";
 import { requests as requestsApi, volunteers as volApi } from "../../api/services";
-import { REQUEST_TYPE, REQUEST_STATUS, timeAgo } from "../../lib/meta";
+import { REQUEST_TYPE, REQUEST_STATUS, PRIORITY, priorityBand, timeAgo } from "../../lib/meta";
 import AppShell from "../../components/AppShell";
 import LocationModal from "../../components/LocationModal";
 import RoadmapNote from "../../components/RoadmapNote";
@@ -53,13 +53,22 @@ export default function AdminRequestsPage() {
 
   return (
     <AppShell>
-      <PageHeader eyebrow="Triage" title="Request queue" subtitle="Review incoming requests and assign volunteers." />
+      <PageHeader eyebrow="Triage" title="Request queue" subtitle="AI-ranked by urgency — an administrator makes the final decision." />
+
+      <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-teal-100 bg-teal-50/70 px-4 py-3">
+        <Sparkles size={16} className="mt-0.5 shrink-0 text-teal-600" />
+        <p className="text-[13px] text-teal-800">
+          <span className="font-semibold">AI auto-triage is live.</span> New requests are scored for
+          urgency and sorted to the top automatically. The score is a suggestion — you still review,
+          assign, and resolve every request.
+        </p>
+      </div>
 
       <RoadmapNote
-        week="Week 9"
+        week="Week 10"
         items={[
-          "AI auto-triage — automatic priority ranking & categorisation",
           "Reassign volunteers and add internal triage notes",
+          "Bulk actions on the queue",
         ]}
       />
 
@@ -85,6 +94,8 @@ export default function AdminRequestsPage() {
             const type = REQUEST_TYPE[r.request_type] || REQUEST_TYPE.other;
             const Icon = Icons[type.icon] || Icons.CircleHelp;
             const st = REQUEST_STATUS[r.status] || { label: r.status, tone: "slate" };
+            const band = priorityBand(r.priority_score);
+            const pri = band ? PRIORITY[band] : null;
             const assignedVol = r.assignment ? vols.find((v) => v.id === r.assignment.volunteer_id) : null;
             return (
               <Card key={r.id} className="p-5" hover>
@@ -95,11 +106,18 @@ export default function AdminRequestsPage() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-[15px] font-semibold text-ink group-hover:text-teal-600">{type.label}</p>
+                        {pri && <Badge tone={pri.tone} dot>{pri.label} · {r.priority_score}</Badge>}
                         <Badge tone={st.tone} dot>{st.label}</Badge>
                         {r.incident_title && <span className="text-[12px] text-muted">· {r.incident_title}</span>}
                         {r.affected_count > 1 && <span className="text-[12px] text-muted">· {r.affected_count} people</span>}
                       </div>
                       <p className="mt-1 line-clamp-1 text-[13.5px] text-body">{r.description}</p>
+                      {r.ai_summary && (
+                        <p className="mt-1 flex items-start gap-1.5 text-[12.5px] text-muted">
+                          <Sparkles size={12} className="mt-[3px] shrink-0 text-teal-500" />
+                          <span className="line-clamp-1"><span className="font-semibold text-teal-600">AI</span> · {r.ai_summary}</span>
+                        </p>
+                      )}
                       <p className="mt-1 text-[12px] text-muted">
                         {r.citizen_name} · {r.address || "—"} · {timeAgo(r.created_at)}
                         {(r.address || r.latitude != null) && (
