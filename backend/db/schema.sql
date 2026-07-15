@@ -60,6 +60,7 @@ CREATE TABLE incidents (
     status       VARCHAR(20) NOT NULL DEFAULT 'pending'
                  CHECK (status IN ('pending', 'verified', 'assigned', 'in_progress', 'resolved', 'closed')),
     source       VARCHAR(150),
+    external_id  VARCHAR(200),   -- provider's own id (USGS/BCWS/ECCC) for idempotent ingest
     verified_by  INTEGER REFERENCES users(id),
     verified_at  TIMESTAMPTZ,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -69,6 +70,8 @@ CREATE TABLE incidents (
 CREATE INDEX idx_incidents_status ON incidents(status);
 CREATE INDEX idx_incidents_type ON incidents(type);
 CREATE INDEX idx_incidents_location ON incidents(latitude, longitude);
+-- One row per (source, external_id): a re-fetch UPDATEs rather than duplicates.
+CREATE UNIQUE INDEX ux_incidents_source_extid ON incidents(source, external_id) WHERE external_id IS NOT NULL;
 
 -- ============================================================
 -- requests (citizen assistance requests)

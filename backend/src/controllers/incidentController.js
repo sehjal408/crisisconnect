@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { runIngest } = require("../services/ingest");
 
 async function listIncidents(req, res, next) {
   try {
@@ -45,7 +46,16 @@ async function getIncident(req, res, next) {
   }
 }
 
-// (Admin incident verification is the Week 10 "admin verification" item — not in
-// the Week 8 MVP scope, so incidents are read-only for now.)
+// Admin: pull the latest from the live official feeds (USGS / BC Wildfire / ECCC)
+// and upsert them into the incidents table. Returns a per-source summary.
+// (Admin verification of ingested incidents is the Week 10 step.)
+async function ingestIncidents(req, res, next) {
+  try {
+    const summary = await runIngest();
+    return res.json({ summary });
+  } catch (err) {
+    return next(err);
+  }
+}
 
-module.exports = { listIncidents, getIncident };
+module.exports = { listIncidents, getIncident, ingestIncidents };

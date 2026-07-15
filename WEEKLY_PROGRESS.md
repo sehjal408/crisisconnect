@@ -36,24 +36,34 @@ Weeks 10–13 are listed at the end as the planned remaining work (not built yet
   layer (below).
 - Shelters and incidents are **read-only** views in this milestone.
 
-## Week 9 — AI auto-triage ✅
-- **AI logic layer** — every incoming citizen request is automatically scored for
+## Week 9 — AI layer + live data ingestion ✅
+- **AI auto-triage** — every incoming citizen request is automatically scored for
   urgency the moment it is submitted, filling the `priority_score`, `ai_category`,
   and `ai_summary` columns. The admin **Request queue** is ordered by priority so
-  the most urgent needs rise to the top, each with a one-line AI summary.
-- **Real model + safe fallback** — scoring uses **Claude (Haiku)** through a
-  structured tool call, guided by an explicit rubric. If there is no API key, no
-  network, or the call errors/times out, it falls back to a deterministic keyword
-  heuristic, so a request is **never** blocked from saving — the app still runs
-  fully offline this way.
-- **Human-in-the-loop** — the AI output is only a suggestion. An administrator
-  still reviews, assigns, and resolves every request; the AI never dispatches.
+  the most urgent needs rise to the top, each with a one-line AI summary. Scoring
+  uses **Claude (Haiku)** through a structured tool call, guided by an explicit
+  rubric, with a deterministic keyword-heuristic fallback so it runs offline and a
+  request is **never** blocked from saving. Human-in-the-loop: the score is only a
+  suggestion; an administrator still reviews, assigns, and resolves every request.
+- **Live incident ingestion** — a resilient ingestion framework pulls incidents
+  from official public sources and UPSERTs them by `(source, external_id)`, so a
+  re-fetch updates rather than duplicates. Runs on server boot, on a periodic
+  timer, and on demand via an admin-only **Refresh feeds** button. Each source is
+  isolated, so one failing feed (or no internet) never breaks the others.
+- **All seven official B.C. feeds are live** (Weeks 9–10 ingestion): earthquakes
+  (**USGS**), wildfires (**BC Wildfire Service** — significant active fires only),
+  weather alerts (**Environment Canada** GeoMet `weather-alerts`), air quality
+  (**AQHI**, high-risk only), floods (**BC River Forecast Centre**, grouped by
+  basin), road events (**DriveBC** Open511, significant only), and evacuation
+  orders/alerts (**EmergencyInfoBC**). Every point is filtered to inside British
+  Columbia (point-in-polygon). Feed incidents arrive as `pending` for an
+  administrator to verify (verification is the remaining Week 10 step).
 
 ### Scope note — intentionally NOT in this build (Weeks 10–13)
 To stay true to the timeline, these remain planned:
-- **Week 10** — live data-source ingestion from official B.C. feeds, feed
-  de-duplication & admin verification; shelter occupancy management, low-stock
-  alerts, notifications.
+- **Week 10 (remaining)** — live feeds are done (see Week 9 above); still to do:
+  cross-source de-duplication & admin verification of feed incidents; shelter
+  occupancy management, low-stock alerts, notifications.
 - **Week 11** — analytics charts, impact metrics, PDF/CSV export, automated tests,
   hosted deployment.
 - **Week 12** — QA & demo polish.

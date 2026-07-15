@@ -39,6 +39,8 @@ export const auth = {
 export const incidents = {
   list: (filters) =>
     call(() => api.get("/incidents", { params: filters }).then((r) => r.data.incidents), () => demo.incidents(filters)),
+  // Admin: pull the latest from the live official feeds (USGS / BC Wildfire / ECCC).
+  ingest: () => api.post("/incidents/ingest").then((r) => r.data.summary),
 };
 
 export const shelters = {

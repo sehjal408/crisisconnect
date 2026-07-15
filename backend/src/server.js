@@ -1,12 +1,14 @@
 require("dotenv").config();
 const app = require("./app");
 const { initDb } = require("./config/init");
+const { startIngestion } = require("./services/ingest");
 
 const PORT = process.env.PORT || 4000;
 
 initDb()
-  .then((seeded) => {
+  .then(async (seeded) => {
     console.log(seeded ? "Database initialized + seeded (embedded PostgreSQL)." : "Database ready.");
+    await startIngestion(); // Week 9 live feeds: ensure schema, optional boot run + refresh
     app.listen(PORT, () => {
       console.log(`CrisisConnect API listening on http://localhost:${PORT}`);
     });

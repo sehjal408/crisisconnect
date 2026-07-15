@@ -7,6 +7,8 @@ import AppShell from "../../components/AppShell";
 import CrisisMap from "../../components/CrisisMap";
 import RequestModal from "../../components/RequestModal";
 import RoadmapNote from "../../components/RoadmapNote";
+import IncidentTypeFilter from "../../components/IncidentTypeFilter";
+import SeverityFilter from "../../components/SeverityFilter";
 import { Card, Button, Badge, SeverityDot, PageHeader, Spinner, cx, AlertBanner } from "../../components/ui";
 
 const SEV_ORDER = ["critical", "high", "medium", "low"];
@@ -16,6 +18,7 @@ export default function MapPage() {
   const [shelters, setShelters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sev, setSev] = useState("all");
+  const [types, setTypes] = useState([]);
   const [modal, setModal] = useState(false);
   const [focus, setFocus] = useState(null);
 
@@ -26,8 +29,11 @@ export default function MapPage() {
   }, []);
 
   const filtered = useMemo(
-    () => (sev === "all" ? incidents : incidents.filter((i) => i.severity === sev)),
-    [incidents, sev]
+    () =>
+      incidents.filter(
+        (i) => (sev === "all" || i.severity === sev) && (types.length === 0 || types.includes(i.type))
+      ),
+    [incidents, sev, types]
   );
   const openShelters = shelters.filter((s) => s.status !== "closed");
   const criticalCount = incidents.filter((i) => i.severity === "critical").length;
@@ -52,27 +58,14 @@ export default function MapPage() {
         ]}
       />
 
-      {/* severity filter */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {["all", ...SEV_ORDER].map((s) => (
-          <button
-            key={s}
-            onClick={() => setSev(s)}
-            className={cx(
-              "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition",
-              sev === s ? "bg-ink text-white shadow-soft" : "bg-white text-body hairline hover:bg-line-soft"
-            )}
-          >
-            {s !== "all" && <span className="h-2 w-2 rounded-full" style={{ background: SEVERITY[s].color }} />}
-            {s === "all" ? "All severities" : SEVERITY[s].label}
-          </button>
-        ))}
-      </div>
+      {/* severity + incident-type filters */}
+      <SeverityFilter value={sev} onChange={setSev} className="mb-3" />
+      <IncidentTypeFilter incidents={incidents} value={types} onChange={setTypes} className="mb-4" />
 
       {loading ? (
         <Spinner label="Loading map…" />
       ) : (
-        <div className="grid gap-5 lg:h-[calc(100vh_-_13rem)] lg:min-h-[580px] lg:grid-cols-3">
+        <div className="grid gap-5 lg:h-[600px] lg:grid-cols-3">
           <div className="flex min-h-0 flex-col lg:col-span-2">
             <CrisisMap incidents={filtered} shelters={shelters} focus={focus} height={null} className="h-[60vh] min-h-[420px] lg:h-auto lg:flex-1" />
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-[12px] text-muted">
@@ -90,7 +83,7 @@ export default function MapPage() {
           </div>
 
           <div className="space-y-5 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pr-1">
-            <Card className="p-5">
+            <Card className="p-5" reveal={false}>
               <h3 className="text-[15px] font-semibold text-ink">Active incidents</h3>
               <p className="mb-3 text-[12px] text-muted">{filtered.length} shown</p>
               <ul className="space-y-1">
@@ -123,7 +116,7 @@ export default function MapPage() {
               </ul>
             </Card>
 
-            <Card className="p-5">
+            <Card className="p-5" reveal={false}>
               <h3 className="text-[15px] font-semibold text-ink">Open shelters</h3>
               <p className="mb-3 text-[12px] text-muted">{openShelters.length} accepting people</p>
               <ul className="space-y-1.5">

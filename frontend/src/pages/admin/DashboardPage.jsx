@@ -7,6 +7,8 @@ import AppShell from "../../components/AppShell";
 import CrisisMap from "../../components/CrisisMap";
 import RoadmapNote from "../../components/RoadmapNote";
 import RequestDetailModal from "../../components/RequestDetailModal";
+import IncidentTypeFilter, { filterByTypes } from "../../components/IncidentTypeFilter";
+import SeverityFilter, { filterBySeverity } from "../../components/SeverityFilter";
 import { Card, Badge, PageHeader, Spinner, CountUp, AlertBanner } from "../../components/ui";
 
 const STATS = [
@@ -23,6 +25,8 @@ export default function AdminDashboardPage() {
   const [shelters, setShelters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);
+  const [types, setTypes] = useState([]);
+  const [sev, setSev] = useState("all");
 
   useEffect(() => {
     Promise.all([
@@ -77,7 +81,9 @@ export default function AdminDashboardPage() {
               All incidents <ArrowRight size={14} />
             </Link>
           </div>
-          <CrisisMap incidents={incidents} shelters={shelters} height={420} />
+          <SeverityFilter value={sev} onChange={setSev} className="mb-2" />
+          <IncidentTypeFilter incidents={incidents} value={types} onChange={setTypes} className="mb-3" />
+          <CrisisMap incidents={filterBySeverity(filterByTypes(incidents, types), sev)} shelters={shelters} height={420} />
         </div>
 
         <Card className="p-5">

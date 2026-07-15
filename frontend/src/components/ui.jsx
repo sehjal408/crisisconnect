@@ -69,6 +69,11 @@ export function Card({ className, children, hover, glow, reveal = true, ...rest 
     if (!reveal || shown) return;
     const el = ref.current;
     if (!el) return;
+    // If the card is already within the viewport at mount, reveal it immediately.
+    // (Above-the-fold cards — e.g. the map sidebar — could otherwise stay hidden
+    // until the observer's first callback fires on a later re-render.)
+    const r = el.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) { setShown(true); return; }
     const io = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setShown(true); io.disconnect(); } },
       { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
