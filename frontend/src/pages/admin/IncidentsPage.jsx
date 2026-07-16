@@ -68,15 +68,15 @@ export default function AdminIncidentsPage() {
       <RoadmapNote
         week="Week 10"
         items={[
-          "More feeds — floods, road closures, evacuations, air quality",
-          "Cross-source de-duplication + admin verification of feed incidents",
+          "Cross-source de-duplication of overlapping alerts",
+          "Admin verification of feed incidents (pending → verified)",
         ]}
       />
 
       <SeverityFilter value={sev} onChange={setSev} className="mb-2" />
       <IncidentTypeFilter incidents={rows} value={types} onChange={setTypes} className="mb-3" />
 
-      <CrisisMap incidents={filtered} shelters={shelters} height={360} />
+      <CrisisMap incidents={filtered} shelters={shelters} height={560} />
 
       <div className="mb-4 mt-6 flex flex-wrap items-center gap-2">
         <span className="text-[13px] text-muted">{filtered.length} incidents</span>
@@ -91,7 +91,7 @@ export default function AdminIncidentsPage() {
             <Card key={i.id} className="flex cursor-pointer flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between" hover onClick={() => setActive(i)}>
               <div className="flex items-center gap-3.5">
                 <span className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: `${t.color}1a`, color: t.color }}>
-                  <Icon size={19} className={t.anim} />
+                  <Icon size={19} />
                 </span>
                 <div>
                   <div className="flex items-center gap-2">

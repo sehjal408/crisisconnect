@@ -55,4 +55,4 @@ async function fetchBCWildfire() {
   return out;
 }
 
-module.exports = { key: "bcwildfire", name: "BC Wildfire Service", fetch: fetchBCWildfire };
+module.exports = { key: "bcwildfire", name: "BC Wildfire Service", source: "BC Wildfire Service", fetch: fetchBCWildfire };

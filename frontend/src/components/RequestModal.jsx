@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X, ShieldCheck } from "lucide-react";
 import { requests, incidents as incidentsApi } from "../api/services";
 import { REQUEST_TYPE } from "../lib/meta";
@@ -40,10 +41,10 @@ export default function RequestModal({ open, onClose, onCreated }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm animate-fade" onClick={onClose} />
-      <div className="relative w-full max-w-md animate-rise rounded-[22px] bg-white p-6 shadow-pop">
+      <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto animate-rise rounded-[22px] bg-white p-6 shadow-pop">
         <div className="mb-5 flex items-start justify-between">
           <div>
             <h3 className="text-[19px] font-bold text-ink">Request assistance</h3>
@@ -103,6 +104,7 @@ export default function RequestModal({ open, onClose, onCreated }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

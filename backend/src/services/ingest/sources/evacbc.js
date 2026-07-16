@@ -38,4 +38,4 @@ async function fetchEvacBC() {
   return out;
 }
 
-module.exports = { key: "evacbc", name: "EmergencyInfoBC (evacuations)", fetch: fetchEvacBC };
+module.exports = { key: "evacbc", name: "EmergencyInfoBC (evacuations)", source: "EmergencyInfoBC", fetch: fetchEvacBC };

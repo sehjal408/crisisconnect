@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { createPortal } from "react-dom";
 import { X, Navigation, MapPin } from "lucide-react";
 import { Button, Spinner } from "./ui";
 
@@ -50,10 +51,10 @@ export default function LocationModal({ open, onClose, latitude, longitude, addr
       ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`
       : null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm animate-fade" onClick={onClose} />
-      <div className="relative w-full max-w-lg animate-rise rounded-[22px] bg-white p-6 shadow-pop">
+      <div className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto animate-rise rounded-[22px] bg-white p-6 shadow-pop">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-[18px] font-bold text-ink">{title}</h3>
@@ -89,6 +90,7 @@ export default function LocationModal({ open, onClose, latitude, longitude, addr
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

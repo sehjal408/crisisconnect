@@ -47,4 +47,4 @@ async function fetchAQHI() {
   return out;
 }
 
-module.exports = { key: "aqhi", name: "Air Quality (AQHI)", fetch: fetchAQHI };
+module.exports = { key: "aqhi", name: "Air Quality (AQHI)", source: "Environment Canada (AQHI)", fetch: fetchAQHI };

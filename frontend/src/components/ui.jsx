@@ -1,8 +1,19 @@
 // Reusable UI primitives — the CrisisConnect design system.
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Loader2, X, Check, TriangleAlert } from "lucide-react";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
+
+// Lock background scroll while an overlay (Modal/Drawer) is open.
+function useLockBodyScroll(active) {
+  useEffect(() => {
+    if (!active) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [active]);
+}
 
 /* ----------------------------------------------------------- Logo */
 export function Logo({ size = 30, withWord = true, light = false }) {
@@ -284,9 +295,10 @@ export function PageHeader({ eyebrow, title, subtitle, actions, gradient, live }
 
 /* ----------------------------------------------------------- Modal shell */
 export function Modal({ open, onClose, title, subtitle, icon: Icon, headerRight, footer, size = "md", children }) {
+  useLockBodyScroll(open);
   if (!open) return null;
   const max = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-2xl" }[size] || "max-w-md";
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm animate-fade" onClick={onClose} />
       <div className={cx("relative flex max-h-[88vh] w-full flex-col animate-rise rounded-[22px] bg-white shadow-pop", max)}>
@@ -306,14 +318,16 @@ export function Modal({ open, onClose, title, subtitle, icon: Icon, headerRight,
         <div className="overflow-auto px-6 py-5">{children}</div>
         {footer && <div className="border-t border-line px-6 py-3.5">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 /* ----------------------------------------------------------- Drawer (right slide-over) */
 export function Drawer({ open, onClose, title, subtitle, icon: Icon, headerRight, footer, children }) {
+  useLockBodyScroll(open);
   if (!open) return null;
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-ink/30 backdrop-blur-sm animate-fade" onClick={onClose} />
       <div className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-pop animate-slide-in">
@@ -333,7 +347,8 @@ export function Drawer({ open, onClose, title, subtitle, icon: Icon, headerRight
         <div className="flex-1 overflow-auto px-6 py-5">{children}</div>
         {footer && <div className="border-t border-line px-6 py-3.5">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

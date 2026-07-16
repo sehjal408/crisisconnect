@@ -65,12 +65,14 @@ async function runIngest() {
   await ensureSchema();
   const summary = [];
   for (const src of SOURCES) {
-    const row = { source: src.name, fetched: 0, inserted: 0, updated: 0, error: null };
+    const row = { source: src.name, fetched: 0, inserted: 0, updated: 0, removed: 0, error: null };
     try {
       const items = await src.fetch();
       row.fetched = items.length;
+      const seen = [];
       for (const it of items) {
         if (!it.external_id) continue;
+        seen.push(it.external_id);
         try {
           const res = await pool.query(UPSERT, [
             it.external_id, it.title, it.type, it.description || null,
@@ -82,11 +84,28 @@ async function runIngest() {
           if (!row.error) row.error = `row: ${e.message}`;
         }
       }
+      // Remove this source's incidents that are no longer in the live feed
+      // (resolved/expired), so the map stays in sync. Only unverified feed rows
+      // are touched, and only after a successful fetch (so a transient failure
+      // never wipes data). Runs only when the source declares its DB `source`.
+      if (src.source) {
+        const del = seen.length
+          ? await pool.query(
+              `DELETE FROM incidents WHERE source = $1 AND external_id IS NOT NULL
+                 AND verified_at IS NULL AND NOT (external_id = ANY($2))`,
+              [src.source, seen]
+            )
+          : await pool.query(
+              `DELETE FROM incidents WHERE source = $1 AND external_id IS NOT NULL AND verified_at IS NULL`,
+              [src.source]
+            );
+        row.removed = del.rowCount || 0;
+      }
     } catch (e) {
       row.error = e.message;
     }
     console.log(
-      `[ingest] ${src.name}: fetched=${row.fetched} new=${row.inserted} updated=${row.updated}` +
+      `[ingest] ${src.name}: fetched=${row.fetched} new=${row.inserted} updated=${row.updated} removed=${row.removed}` +
       (row.error ? ` error=${row.error}` : "")
     );
     summary.push(row);

@@ -51,4 +51,4 @@ async function fetchBCFlood() {
   return out;
 }
 
-module.exports = { key: "bcflood", name: "BC River Forecast (floods)", fetch: fetchBCFlood };
+module.exports = { key: "bcflood", name: "BC River Forecast (floods)", source: "BC River Forecast Centre", fetch: fetchBCFlood };

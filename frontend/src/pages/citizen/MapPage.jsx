@@ -51,10 +51,10 @@ export default function MapPage() {
       {criticalCount > 0 && <AlertBanner count={criticalCount} />}
 
       <RoadmapNote
-        week="Weeks 9–10"
+        week="Week 10"
         items={[
-          "Live incident feeds from 7 official B.C. sources (USGS, BC Wildfire, Environment Canada, DriveBC…)",
-          "Automatic de-duplication of incoming alerts",
+          "Automatic de-duplication of overlapping alerts",
+          "Verified official incidents (admin-reviewed before they appear)",
         ]}
       />
 
@@ -65,9 +65,9 @@ export default function MapPage() {
       {loading ? (
         <Spinner label="Loading map…" />
       ) : (
-        <div className="grid gap-5 lg:h-[600px] lg:grid-cols-3">
+        <div className="grid gap-5 lg:h-[calc(100vh-11rem)] lg:min-h-[640px] lg:grid-cols-3">
           <div className="flex min-h-0 flex-col lg:col-span-2">
-            <CrisisMap incidents={filtered} shelters={shelters} focus={focus} height={null} className="h-[60vh] min-h-[420px] lg:h-auto lg:flex-1" />
+            <CrisisMap incidents={filtered} shelters={shelters} focus={focus} height={null} className="h-[68vh] min-h-[480px] lg:h-auto lg:flex-1" />
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 px-1 text-[12px] text-muted">
               {SEV_ORDER.map((s) => (
                 <span key={s} className="inline-flex items-center gap-1.5">
@@ -98,7 +98,7 @@ export default function MapPage() {
                         className={cx("flex w-full items-center gap-3 rounded-lg px-1.5 py-1.5 text-left transition", on ? "bg-teal-50" : "hover:bg-line-soft")}
                       >
                         <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg" style={{ background: `${t.color}1a`, color: t.color }}>
-                          <TIcon size={16} className={t.anim} />
+                          <TIcon size={16} />
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">

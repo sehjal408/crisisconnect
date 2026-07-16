@@ -54,4 +54,4 @@ async function fetchECCC() {
   return out;
 }
 
-module.exports = { key: "eccc", name: "Environment Canada weather", fetch: fetchECCC };
+module.exports = { key: "eccc", name: "Environment Canada weather", source: "Environment Canada", fetch: fetchECCC };

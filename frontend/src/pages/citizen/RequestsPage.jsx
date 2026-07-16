@@ -30,10 +30,10 @@ export default function CitizenRequestsPage() {
       />
 
       <RoadmapNote
-        week="Weeks 9 & 11"
+        week="Week 11"
         items={[
           "SMS / email alerts when your request status changes",
-          "AI-suggested urgency the moment you submit",
+          "Attach photos to your request",
         ]}
       />
 

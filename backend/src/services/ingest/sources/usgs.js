@@ -44,4 +44,4 @@ async function fetchUSGS() {
   return out;
 }
 
-module.exports = { key: "usgs", name: "USGS earthquakes", fetch: fetchUSGS };
+module.exports = { key: "usgs", name: "USGS earthquakes", source: "USGS", fetch: fetchUSGS };
