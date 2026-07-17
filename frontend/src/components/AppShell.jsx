@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Map, ListChecks, LayoutDashboard, Building2, TriangleAlert, LogOut, HandHelping,
+  Map, ListChecks, LayoutDashboard, Building2, TriangleAlert, LogOut, HandHelping, PieChart, Radar,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { isDemo } from "../api/services";
@@ -17,6 +17,8 @@ const NAV = {
     { to: "/admin/requests", label: "Request queue", icon: ListChecks },
     { to: "/admin/shelters", label: "Shelters", icon: Building2 },
     { to: "/admin/incidents", label: "Incidents", icon: TriangleAlert },
+    { to: "/admin/insights", label: "Insights", icon: PieChart },
+    { to: "/admin/command", label: "Command Center", icon: Radar },
   ],
 };
 

@@ -307,18 +307,63 @@ h1, h2, h3, h4 {
 @keyframes ico-drift { 0%, 100% { transform: translateX(0); opacity: 0.85; } 50% { transform: translateX(2px); opacity: 1; } }
 @keyframes ico-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.13); } }
 
-/* Clean light inputs for the auth card (readable at crisis time) */
+/* Clean light inputs for the auth card (readable at crisis time).
+   Focus transition = "you are here" feedback: border + soft ring + a hint of
+   lift, 180ms so it feels immediate but not twitchy. */
 .auth-input {
   width: 100%; height: 46px; border-radius: 14px; padding: 0 14px;
-  background: #ffffff; color: #0b1521; font-size: 14px;
+  background: #f8fafc; color: #0b1521; font-size: 14px;
   border: 1px solid #e2e8f0;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 .auth-input::placeholder { color: #94a3b8; }
+.auth-input:hover { border-color: #cbd5e1; }
 .auth-input:focus {
-  outline: none; border-color: rgba(22, 163, 148, 0.6);
-  box-shadow: 0 0 0 3px rgba(22, 163, 148, 0.18);
+  outline: none; background: #ffffff;
+  border-color: rgba(22, 163, 148, 0.65);
+  box-shadow: 0 0 0 3.5px rgba(22, 163, 148, 0.16);
 }
+/* label brightens while its field is focused — guides the eye down the form */
+.auth-field:focus-within .auth-label { color: #0f877b; }
+.auth-label { transition: color 0.18s ease; }
+
+/* ---- Auth motion (each animation has one job) --------------------------- */
+/* Soft logo fade — brand orients first, before the card arrives */
+@keyframes cc-logo-in { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: blur(0); } }
+/* Error shake — subtle 2-cycle nudge; draws the eye without alarm */
+@keyframes cc-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+/* Success exit — the card settles upward and hands off to the app */
+@keyframes cc-card-out { to { opacity: 0; transform: translateY(-10px) scale(0.985); } }
+/* Success check pop — clear moment of completion inside the button */
+@keyframes cc-pop { 0% { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+
+.animate-logo-in { animation: cc-logo-in 0.7s ease both; }
+.animate-shake { animation: cc-shake 0.32s ease; }
+.animate-card-out { animation: cc-card-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-pop { animation: cc-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-logo-in, .animate-shake, .animate-pop { animation: none; }
+  .animate-card-out { animation: none; opacity: 0; }
+  .animate-rise, .animate-page { animation-duration: 0.01s; }
+}
+
+/* ---- Command Center (3D ops room) HUD ----------------------------------- */
+/* CRT scanlines — very faint, sells the "control room display" feel */
+.cmd-scanlines {
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+/* bottom feed ticker — content is duplicated once, so -50% loops seamlessly */
+.cmd-ticker { display: inline-block; animation: cmd-ticker 60s linear infinite; }
+@keyframes cmd-ticker { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .cmd-ticker { animation: none; } }
 
 /* Slim, quiet scrollbars */
 ::-webkit-scrollbar { width: 10px; height: 10px; }

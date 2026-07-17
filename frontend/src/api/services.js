@@ -77,3 +77,23 @@ export const assignments = {
 export const dashboard = {
   summary: () => call(() => api.get("/dashboard/summary").then((r) => r.data), () => demo.dashboardSummary()),
 };
+
+// Public, unauthenticated network status — powers the live sign-in backdrop.
+export const network = {
+  pulse: () =>
+    call(
+      () => api.get("/public/pulse").then((r) => r.data),
+      () => {
+        const inc = demo.incidents() || [];
+        return {
+          counts: {
+            incidents: inc.length,
+            critical: inc.filter((i) => i.severity === "critical").length,
+            feeds: 7,
+            shelters_open: 3,
+          },
+          points: inc.map(({ type, severity, latitude, longitude }) => ({ type, severity, latitude, longitude })),
+        };
+      }
+    ),
+};

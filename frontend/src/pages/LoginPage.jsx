@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, Check, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { DEMO_PASSWORD } from "../data/demo";
 import AuthLayout from "../components/AuthLayout";
+import { cx } from "../components/ui";
 
 const HOME_BY_ROLE = { citizen: "/map", volunteer: "/volunteer", admin: "/admin" };
 
@@ -19,19 +20,23 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [errorKey, setErrorKey] = useState(0); // re-keys the alert so a repeat error re-shakes
+  const [status, setStatus] = useState("idle"); // idle | loading | success
+  const busy = status !== "idle";
 
   async function submit(e, creds) {
     e?.preventDefault();
     setError("");
-    setSubmitting(true);
+    setStatus("loading");
     try {
       const user = await login(creds?.email ?? email, creds?.password ?? password);
-      navigate(HOME_BY_ROLE[user.role] || "/");
+      // Success transition: show completion, let the card settle out, then hand off.
+      setStatus("success");
+      setTimeout(() => navigate(HOME_BY_ROLE[user.role] || "/"), 600);
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || "Sign in failed");
-    } finally {
-      setSubmitting(false);
+      setErrorKey((k) => k + 1);
+      setStatus("idle");
     }
   }
 
@@ -42,34 +47,61 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout>
-      <span className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-teal-600">
-        Secure access
+    <AuthLayout leaving={status === "success"}>
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-teal-600">
+        <Lock size={11} strokeWidth={2.6} /> Secure access
       </span>
       <h2 className="mt-3.5 text-[26px] font-bold leading-tight text-ink">Welcome back</h2>
       <p className="mt-1 text-[13.5px] text-muted">Sign in to the CrisisConnect response network.</p>
 
       <form onSubmit={submit} className="mt-6 space-y-4">
-        <div>
-          <label className="mb-1.5 block text-[12.5px] font-medium text-body">Email</label>
-          <input className="auth-input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+        <div className="auth-field">
+          <label htmlFor="login-email" className="auth-label mb-1.5 block text-[12.5px] font-medium text-body">Email</label>
+          <input
+            id="login-email" className="auth-input" type="email" required autoFocus
+            value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com" autoComplete="email"
+          />
         </div>
-        <div>
-          <label className="mb-1.5 block text-[12.5px] font-medium text-body">Password</label>
-          <input className="auth-input" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" />
+        <div className="auth-field">
+          <label htmlFor="login-password" className="auth-label mb-1.5 block text-[12.5px] font-medium text-body">Password</label>
+          <input
+            id="login-password" className="auth-input" type="password" required
+            value={password} onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••" autoComplete="current-password"
+          />
         </div>
 
         {error && (
-          <p className="rounded-xl border border-[#f3c2bd] bg-[#fdecea] px-3 py-2 text-[13px] font-medium text-[#b3392e]">{error}</p>
+          <p
+            key={errorKey}
+            role="alert"
+            className="animate-shake rounded-xl border border-[#f3c2bd] bg-[#fdecea] px-3 py-2 text-[13px] font-medium text-[#b3392e]"
+          >
+            {error}
+          </p>
         )}
 
+        {/* Primary action — hover lifts (affordance), press compresses (confirmation),
+            loading keeps the label (progress without a layout jump), success shows
+            a clear moment of completion before the page hands off. */}
         <button
           type="submit"
-          disabled={submitting}
-          className="mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-[#06121f] transition-all duration-200 focus-ring active:scale-[0.98] disabled:opacity-60"
-          style={{ background: "linear-gradient(120deg,#2dd4bf,#16a394)", boxShadow: "0 14px 30px -14px rgba(22,163,148,.55)" }}
+          disabled={busy}
+          className={cx(
+            "mt-1 flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold focus-ring",
+            "transition-all duration-200 active:scale-[0.97] disabled:cursor-default",
+            status === "success" ? "text-white" : "text-[#06121f] hover:-translate-y-px hover:brightness-[1.04] disabled:opacity-80"
+          )}
+          style={
+            status === "success"
+              ? { background: "#2e9e6b", boxShadow: "0 14px 30px -14px rgba(46,158,107,.6)" }
+              : { background: "linear-gradient(120deg,#2dd4bf,#16a394)", boxShadow: "0 14px 30px -14px rgba(22,163,148,.55)" }
+          }
         >
-          {submitting ? <Loader2 size={17} className="animate-spin" /> : <>Sign in <ArrowRight size={17} /></>}
+          {status === "loading" && <><Loader2 size={17} className="animate-spin" /> Signing in…</>}
+          {status === "success" && <><Check size={18} strokeWidth={3} className="animate-pop" /> Welcome</>}
+          {status === "idle" && <>Sign in <ArrowRight size={17} /></>}
         </button>
       </form>
 
@@ -84,8 +116,8 @@ export default function LoginPage() {
             <button
               key={a.role}
               onClick={() => quickFill(a)}
-              disabled={submitting}
-              className="rounded-xl bg-white px-2 py-2.5 text-[13px] font-semibold text-ink hairline transition hover:border-teal hover:bg-teal-50 focus-ring disabled:opacity-50"
+              disabled={busy}
+              className="rounded-xl border border-line bg-white px-2 py-2.5 text-[13px] font-semibold text-ink transition-all duration-150 hover:-translate-y-px hover:border-teal hover:bg-teal-50 focus-ring active:scale-[0.97] disabled:opacity-50"
             >
               {a.role}
             </button>

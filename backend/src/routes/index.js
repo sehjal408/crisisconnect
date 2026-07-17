@@ -7,9 +7,11 @@ const requestRoutes = require("./requestRoutes");
 const assignmentRoutes = require("./assignmentRoutes");
 const dashboardRoutes = require("./dashboardRoutes");
 const volunteerRoutes = require("./volunteerRoutes");
+const publicRoutes = require("./publicRoutes");
 
 const router = express.Router();
 
+router.use("/public", publicRoutes);
 router.use("/auth", authRoutes);
 router.use("/incidents", incidentRoutes);
 router.use("/shelters", shelterRoutes);

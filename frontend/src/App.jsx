@@ -10,6 +10,8 @@ import AdminDashboardPage from "./pages/admin/DashboardPage";
 import AdminRequestsPage from "./pages/admin/RequestsPage";
 import AdminSheltersPage from "./pages/admin/SheltersPage";
 import AdminIncidentsPage from "./pages/admin/IncidentsPage";
+import AdminInsightsPage from "./pages/admin/InsightsPage";
+import CommandCenterPage from "./pages/admin/CommandCenterPage";
 
 const HOME_BY_ROLE = { citizen: "/map", volunteer: "/volunteer", admin: "/admin" };
 
@@ -40,6 +42,8 @@ export default function App() {
       <Route path="/admin/requests" element={guard(["admin"], <AdminRequestsPage />)} />
       <Route path="/admin/shelters" element={guard(["admin"], <AdminSheltersPage />)} />
       <Route path="/admin/incidents" element={guard(["admin"], <AdminIncidentsPage />)} />
+      <Route path="/admin/insights" element={guard(["admin"], <AdminInsightsPage />)} />
+      <Route path="/admin/command" element={guard(["admin"], <CommandCenterPage />)} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
