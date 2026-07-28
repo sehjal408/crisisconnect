@@ -1,6 +1,71 @@
 // Lightweight, dependency-free charts for the Insights page.
 // Design rules: thin marks, rounded data-ends, a recessive track for scale, and
 // a value printed on every row/segment so identity is never colour-alone.
+import { useEffect, useRef, useState } from "react";
+
+// Trend area — change over time (single series, one hue) with a hover crosshair.
+// Measures its own width so marks/labels never distort.
+export function TrendArea({ data = [], height = 190, hue = "#16a394", unit = "requests" }) {
+  const wrapRef = useRef(null);
+  const [w, setW] = useState(680);
+  const [hover, setHover] = useState(null);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((e) => setW(Math.max(240, e[0].contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const H = height, padT = 14, padB = 26, padX = 6;
+  const n = data.length;
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const x = (i) => padX + (n <= 1 ? 0 : (i / (n - 1)) * (w - padX * 2));
+  const y = (v) => padT + (1 - v / max) * (H - padT - padB);
+  const line = data.map((d, i) => `${x(i)},${y(d.value)}`).join(" ");
+  const area = n ? `M ${x(0)},${y(data[0].value)} ${data.map((d, i) => `L ${x(i)},${y(d.value)}`).join(" ")} L ${x(n - 1)},${H - padB} L ${x(0)},${H - padB} Z` : "";
+  const grid = [0.5, 1].map((f) => padT + f * (H - padT - padB));
+  const short = (iso) => new Date(iso + "T00:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+
+  function onMove(e) {
+    const r = wrapRef.current.getBoundingClientRect();
+    const rx = e.clientX - r.left;
+    let i = Math.round(((rx - padX) / (w - padX * 2)) * (n - 1));
+    setHover(Math.max(0, Math.min(n - 1, i)));
+  }
+
+  return (
+    <div ref={wrapRef} className="relative w-full">
+      <svg width={w} height={H} onMouseMove={onMove} onMouseLeave={() => setHover(null)} style={{ display: "block" }}>
+        <defs>
+          <linearGradient id="tf" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={hue} stopOpacity="0.16" />
+            <stop offset="100%" stopColor={hue} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {grid.map((gy, i) => <line key={i} x1={padX} x2={w - padX} y1={gy} y2={gy} stroke="#eef1f5" strokeWidth="1" />)}
+        {area && <path d={area} fill="url(#tf)" />}
+        {n > 1 && <polyline points={line} fill="none" stroke={hue} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+        {hover != null && (
+          <g>
+            <line x1={x(hover)} x2={x(hover)} y1={padT} y2={H - padB} stroke="#cbd5e1" strokeWidth="1" strokeDasharray="3 3" />
+            <circle cx={x(hover)} cy={y(data[hover].value)} r="4" fill="#fff" stroke={hue} strokeWidth="2" />
+          </g>
+        )}
+        {n > 0 && [0, Math.floor((n - 1) / 2), n - 1].map((i, k) => (
+          <text key={k} x={Math.min(Math.max(x(i), 18), w - 18)} y={H - 8} textAnchor="middle" style={{ fill: "#8a97a3", fontSize: 11 }}>{short(data[i].date)}</text>
+        ))}
+      </svg>
+      {hover != null && (
+        <div className="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg bg-ink px-2.5 py-1.5 text-[11px] font-medium text-white shadow-pop"
+          style={{ left: x(hover), top: -6 }}>
+          {short(data[hover].date)} · <span className="font-bold">{data[hover].value}</span> {unit}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Horizontal bar list — magnitude across categories.
 export function BarList({ data = [], empty = "No data yet." }) {

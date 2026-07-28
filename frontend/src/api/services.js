@@ -89,6 +89,7 @@ export const assignments = {
 
 export const dashboard = {
   summary: () => call(() => api.get("/dashboard/summary").then((r) => r.data), () => demo.dashboardSummary()),
+  analytics: () => call(() => api.get("/dashboard/analytics").then((r) => r.data), () => null),
 };
 
 // In-app notifications (per-user). Polled by the sidebar bell.

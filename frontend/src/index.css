@@ -365,6 +365,15 @@ h1, h2, h3, h4 {
 @keyframes cmd-ticker { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .cmd-ticker { animation: none; } }
 
+/* Print / "Save as PDF" — content only (drop the shell chrome and effects). */
+@media print {
+  aside, header.glass { display: none !important; }
+  .app-aurora { display: none !important; }
+  .shadow-soft, .shadow-pop { box-shadow: none !important; }
+  main > div { max-width: none !important; padding: 0 !important; }
+  body { background: #fff !important; }
+}
+
 /* Slim, quiet scrollbars */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb {

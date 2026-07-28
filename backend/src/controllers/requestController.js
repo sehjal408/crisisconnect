@@ -112,7 +112,12 @@ async function updateRequest(req, res, next) {
       return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid status value" } });
     }
     const result = await pool.query(
-      `UPDATE requests SET status = $1 WHERE id = $2 RETURNING *`,
+      `UPDATE requests
+          SET status = $1,
+              resolved_at = CASE WHEN $1 IN ('resolved','closed') AND resolved_at IS NULL THEN now()
+                                 WHEN $1 NOT IN ('resolved','closed') THEN NULL
+                                 ELSE resolved_at END
+        WHERE id = $2 RETURNING *`,
       [status, req.params.id]
     );
     if (!result.rows[0]) {
@@ -273,7 +278,8 @@ async function placeInShelter(req, res, next) {
          WHERE id = $2`, [need, shelterId]);
     }
     const reqUpd = await client.query(
-      `UPDATE requests SET shelter_id = $1, status = 'resolved' WHERE id = $2 RETURNING *`,
+      `UPDATE requests SET shelter_id = $1, status = 'resolved', resolved_at = COALESCE(resolved_at, now())
+        WHERE id = $2 RETURNING *`,
       [shelterId, req.params.id]
     );
     const shUpd = (await client.query(`SELECT * FROM shelters WHERE id = $1`, [shelterId])).rows[0];

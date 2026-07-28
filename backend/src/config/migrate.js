@@ -27,6 +27,18 @@ async function runMigrations() {
       CHECK (status IN ('pending','verified','dismissed','assigned','in_progress','resolved','closed'));
   `);
 
+  // Week 11 analytics: when a request was resolved (for resolution-time metrics).
+  await db.exec(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;`);
+
+  // Backfill resolved_at for requests that were resolved before the column existed
+  // (a plausible 30 min – 6 h after creation), so resolution-time analytics have
+  // data. Idempotent: only rows still missing it are touched.
+  await db.exec(`
+    UPDATE requests
+       SET resolved_at = created_at + ((30 + random() * 330) * interval '1 minute')
+     WHERE status IN ('resolved','closed') AND resolved_at IS NULL;
+  `);
+
   console.log("[migrate] schema migrations applied.");
 }
 

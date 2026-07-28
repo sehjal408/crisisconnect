@@ -99,6 +99,7 @@ CREATE TABLE requests (
     ai_summary     TEXT,
     status         VARCHAR(20) NOT NULL DEFAULT 'pending'
                    CHECK (status IN ('pending', 'reviewed', 'assigned', 'in_progress', 'resolved', 'closed')),
+    resolved_at    TIMESTAMPTZ,   -- set when the request is resolved/closed (analytics)
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
