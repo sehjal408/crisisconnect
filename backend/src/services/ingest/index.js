@@ -17,6 +17,7 @@
 // de-dup + admin verification are the remaining Week 10 items.
 // ============================================================
 const pool = require("../../config/db");
+const { runDedup } = require("../dedup");
 const usgs = require("./sources/usgs");
 const bcwildfire = require("./sources/bcwildfire");
 const eccc = require("./sources/eccc");
@@ -110,6 +111,8 @@ async function runIngest() {
     );
     summary.push(row);
   }
+  // Cross-source de-dup once all feeds are in (best-effort — never breaks ingest).
+  try { await runDedup(); } catch (e) { console.warn("[dedup] pass failed:", e.message); }
   return summary;
 }
 

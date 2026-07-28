@@ -41,10 +41,19 @@ export const incidents = {
     call(() => api.get("/incidents", { params: filters }).then((r) => r.data.incidents), () => demo.incidents(filters)),
   // Admin: pull the latest from the live official feeds (USGS / BC Wildfire / ECCC).
   ingest: () => api.post("/incidents/ingest").then((r) => r.data.summary),
+  // Admin verification queue.
+  verify: (id) => api.patch(`/incidents/${id}/verify`).then((r) => r.data.incident),
+  dismiss: (id) => api.patch(`/incidents/${id}/dismiss`).then((r) => r.data.incident),
+  // Admin cross-source de-duplication.
+  dedup: () => api.post("/incidents/dedup").then((r) => r.data.summary),
+  unmerge: (id) => api.patch(`/incidents/${id}/unmerge`).then((r) => r.data.incident),
 };
 
 export const shelters = {
   list: () => call(() => api.get("/shelters").then((r) => r.data.shelters), () => demo.shelters()),
+  // Admin: shelter management.
+  create: (payload) => api.post("/shelters", payload).then((r) => r.data.shelter),
+  update: (id, patch) => api.put(`/shelters/${id}`, patch).then((r) => r.data.shelter),
 };
 
 export const requests = {
@@ -57,6 +66,10 @@ export const requests = {
     call(() => api.patch(`/requests/${id}`, { status }).then((r) => r.data.request), () => demo.setRequestStatus(id, status)),
   assign: (id, volunteerId) =>
     call(() => api.post(`/requests/${id}/assign`, { volunteer_id: volunteerId }).then((r) => r.data.assignment), () => demo.assignRequest(id, volunteerId)),
+  // Admin: promote a "Not sure / none" request into a new (citizen-sourced) incident and link them.
+  createIncident: (id, payload) => api.post(`/requests/${id}/incident`, payload).then((r) => r.data.incident),
+  // Admin: place a citizen request into a shelter (consumes beds, links, resolves).
+  place: (id, shelterId) => api.post(`/requests/${id}/place`, { shelter_id: shelterId }).then((r) => r.data),
 };
 
 export const volunteers = {
@@ -76,6 +89,13 @@ export const assignments = {
 
 export const dashboard = {
   summary: () => call(() => api.get("/dashboard/summary").then((r) => r.data), () => demo.dashboardSummary()),
+};
+
+// In-app notifications (per-user). Polled by the sidebar bell.
+export const notifications = {
+  list: () => call(() => api.get("/notifications").then((r) => r.data), () => ({ notifications: [], unread: 0 })),
+  markRead: (id) => api.patch(`/notifications/${id}/read`).then((r) => r.data),
+  markAllRead: () => api.post("/notifications/read-all").then((r) => r.data),
 };
 
 // Public, unauthenticated network status — powers the live sign-in backdrop.

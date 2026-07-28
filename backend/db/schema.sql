@@ -57,12 +57,17 @@ CREATE TABLE incidents (
     latitude     DOUBLE PRECISION NOT NULL,
     longitude    DOUBLE PRECISION NOT NULL,
     severity     VARCHAR(10) NOT NULL CHECK (severity IN ('low', 'medium', 'high', 'critical')),
+    -- Verification lifecycle: feed incidents show immediately; citizen reports stay
+    -- 'pending' until an admin verifies. 'dismissed' hides a false/irrelevant report.
     status       VARCHAR(20) NOT NULL DEFAULT 'pending'
-                 CHECK (status IN ('pending', 'verified', 'assigned', 'in_progress', 'resolved', 'closed')),
+                 CHECK (status IN ('pending', 'verified', 'dismissed', 'assigned', 'in_progress', 'resolved', 'closed')),
     source       VARCHAR(150),
     external_id  VARCHAR(200),   -- provider's own id (USGS/BCWS/ECCC) for idempotent ingest
     verified_by  INTEGER REFERENCES users(id),
     verified_at  TIMESTAMPTZ,
+    reported_by  INTEGER REFERENCES users(id),      -- set when a citizen report created this incident
+    duplicate_of INTEGER REFERENCES incidents(id),  -- set when merged into another incident (de-dup)
+    keep_distinct BOOLEAN NOT NULL DEFAULT false,   -- admin un-merged it: never auto-merge again
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );

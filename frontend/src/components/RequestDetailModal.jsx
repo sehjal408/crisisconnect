@@ -1,29 +1,61 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Icons from "lucide-react";
-import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera, Sparkles } from "lucide-react";
+import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera, Sparkles, House } from "lucide-react";
 import { REQUEST_TYPE, REQUEST_STATUS, ASSIGNMENT_STATUS, PRIORITY, priorityBand, fullDate } from "../lib/meta";
-import { Drawer, Badge, StatusTimeline, DetailRow } from "./ui";
+import { requests as requestsApi } from "../api/services";
+import { Drawer, Badge, StatusTimeline, DetailRow, Button, Select } from "./ui";
 import LocationModal from "./LocationModal";
+import PromoteIncidentModal from "./PromoteIncidentModal";
+import PlaceShelterModal from "./PlaceShelterModal";
 
 const FLOW = [
   { key: "pending", label: "Submitted", hint: "Waiting for an administrator to review." },
-  { key: "reviewed", label: "Reviewed", hint: "An administrator has reviewed this request." },
+  { key: "reviewed", label: "Reviewed", hint: "An administrator has reviewed this req." },
   { key: "assigned", label: "Volunteer assigned", hint: "A volunteer has been assigned." },
   { key: "in_progress", label: "In progress", hint: "Help is on the way." },
   { key: "resolved", label: "Resolved", hint: "This request has been resolved." },
 ];
 
-export default function RequestDetailModal({ open, onClose, request, role = "citizen" }) {
+export default function RequestDetailModal({ open, onClose, request, role = "citizen", volunteers = [], onChanged }) {
   const [showMap, setShowMap] = useState(false);
-  if (!request) return null;
+  const [req, setReq] = useState(request);
+  const [busy, setBusy] = useState(false);
+  const [promote, setPromote] = useState(false);
+  const [place, setPlace] = useState(false);
 
-  const type = REQUEST_TYPE[request.request_type] || REQUEST_TYPE.other;
+  useEffect(() => { setReq(request); }, [request]);
+  if (!req) return null;
+
+  const type = REQUEST_TYPE[req.request_type] || REQUEST_TYPE.other;
   const Icon = Icons[type.icon] || Icons.CircleHelp;
-  const st = REQUEST_STATUS[request.status] || { label: request.status, tone: "slate" };
-  const band = priorityBand(request.priority_score);
+  const st = REQUEST_STATUS[req.status] || { label: req.status, tone: "slate" };
+  const band = priorityBand(req.priority_score);
   const pri = band ? PRIORITY[band] : null;
-  const isClosed = request.status === "closed";
-  const attachments = request.attachments || [];
+  const isClosed = req.status === "closed";
+  const attachments = req.attachments || [];
+
+  const isAdmin = role === "admin";
+  const active = !["resolved", "closed"].includes(req.status);
+  const assignedVol = req.assignment ? volunteers.find((v) => v.id === req.assignment.volunteer_id) : null;
+  const showAdmin = isAdmin && (active || !req.incident_id);
+
+  async function doAssign(volunteerId) {
+    if (!volunteerId) return;
+    setBusy(true);
+    try {
+      const a = await requestsApi.assign(req.id, Number(volunteerId));
+      setReq((r) => ({ ...r, status: "assigned", assignment: { id: a.id, volunteer_id: a.volunteer_id, status: a.status } }));
+      await onChanged?.();
+    } finally { setBusy(false); }
+  }
+  async function doStatus(status) {
+    setBusy(true);
+    try {
+      await requestsApi.setStatus(req.id, status);
+      setReq((r) => ({ ...r, status }));
+      await onChanged?.();
+    } finally { setBusy(false); }
+  }
 
   return (
     <>
@@ -32,7 +64,7 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
         onClose={onClose}
         icon={Icon}
         title={`${type.label} request`}
-        subtitle={`#${request.id} · ${fullDate(request.created_at)}`}
+        subtitle={`#${req.id} · ${fullDate(req.created_at)}`}
         headerRight={<Badge tone={st.tone} dot>{st.label}</Badge>}
       >
         {/* status timeline */}
@@ -43,41 +75,75 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
               <span className="h-2.5 w-2.5 rounded-full bg-muted" /> This request was closed.
             </div>
           ) : (
-            <StatusTimeline steps={FLOW} current={request.status} />
+            <StatusTimeline steps={FLOW} current={req.status} />
           )}
         </div>
 
+        {/* admin actions — mirrors the queue so everything is doable from here */}
+        {showAdmin && (
+          <div className="mt-4 rounded-2xl border border-line p-4">
+            <p className="mb-3 text-[11.5px] font-semibold uppercase tracking-wide text-muted">Admin actions</p>
+            <div className="space-y-2.5">
+              {active && (assignedVol ? (
+                <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-3 py-2 text-[13px] text-teal-600">
+                  <UserCheck size={15} /> Assigned to {assignedVol.name}
+                </div>
+              ) : (
+                <Select disabled={busy} defaultValue="" onChange={(e) => doAssign(e.target.value)}>
+                  <option value="" disabled>Assign volunteer…</option>
+                  {volunteers.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}{v.availability !== "available" ? " (busy)" : ""}</option>
+                  ))}
+                </Select>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                {req.status === "pending" && (
+                  <Button size="sm" variant="subtle" loading={busy} onClick={() => doStatus("reviewed")}>Mark reviewed</Button>
+                )}
+                {active && <Button size="sm" variant="accent" loading={busy} onClick={() => doStatus("resolved")}>Resolve</Button>}
+                {active && <Button size="sm" variant="ghost" loading={busy} onClick={() => doStatus("closed")}>Close</Button>}
+                {!req.incident_id && (
+                  <Button size="sm" variant="subtle" icon={AlertTriangle} loading={busy} onClick={() => setPromote(true)}>Create incident</Button>
+                )}
+                {req.request_type === "shelter" && active && (
+                  <Button size="sm" variant="subtle" icon={House} loading={busy} onClick={() => setPlace(true)}>Place in shelter</Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* details */}
         <div className="mt-4 divide-y divide-line">
-          <DetailRow icon={FileText} label="What's needed">{request.description}</DetailRow>
-          <DetailRow icon={Users} label="People affected">{request.affected_count || 1}</DetailRow>
-          {role !== "citizen" && request.priority_score != null && (
+          <DetailRow icon={FileText} label="What's needed">{req.description}</DetailRow>
+          <DetailRow icon={Users} label="People affected">{req.affected_count || 1}</DetailRow>
+          {role !== "citizen" && req.priority_score != null && (
             <DetailRow icon={Sparkles} label="AI triage (suggested)">
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-2">
                   {pri && <Badge tone={pri.tone} dot>{pri.label}</Badge>}
-                  <span className="text-[12px] text-muted">priority {request.priority_score}/100</span>
+                  <span className="text-[12px] text-muted">priority {req.priority_score}/100</span>
                 </div>
-                {request.ai_summary && <span className="text-[13px] text-body">{request.ai_summary}</span>}
+                {req.ai_summary && <span className="text-[13px] text-body">{req.ai_summary}</span>}
               </div>
             </DetailRow>
           )}
           <DetailRow icon={MapPin} label="Location">
             <div className="flex flex-wrap items-center gap-2">
-              <span>{request.address || "Not provided"}</span>
-              {(request.address || request.latitude != null) && (
+              <span>{req.address || "Not provided"}</span>
+              {(req.address || req.latitude != null) && (
                 <button onClick={() => setShowMap(true)} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-teal-600 hover:underline">
                   <Navigation size={12} /> View on map
                 </button>
               )}
             </div>
           </DetailRow>
-          {request.incident_title && <DetailRow icon={AlertTriangle} label="Related incident">{request.incident_title}</DetailRow>}
-          {role !== "citizen" && request.citizen_name && <DetailRow icon={User} label="Requested by">{request.citizen_name}</DetailRow>}
-          {request.assignment && (
+          {req.incident_title && <DetailRow icon={AlertTriangle} label="Related incident">{req.incident_title}</DetailRow>}
+          {role !== "citizen" && req.citizen_name && <DetailRow icon={User} label="Requested by">{req.citizen_name}</DetailRow>}
+          {req.assignment && (
             <DetailRow icon={UserCheck} label="Assignment">
-              <Badge tone={(ASSIGNMENT_STATUS[request.assignment.status] || {}).tone || "slate"}>
-                {(ASSIGNMENT_STATUS[request.assignment.status] || {}).label || request.assignment.status}
+              <Badge tone={(ASSIGNMENT_STATUS[req.assignment.status] || {}).tone || "slate"}>
+                {(ASSIGNMENT_STATUS[req.assignment.status] || {}).label || req.assignment.status}
               </Badge>
             </DetailRow>
           )}
@@ -106,9 +172,22 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
         open={showMap}
         onClose={() => setShowMap(false)}
         title="Request location"
-        address={request.address}
-        latitude={request.latitude}
-        longitude={request.longitude}
+        address={req.address}
+        latitude={req.latitude}
+        longitude={req.longitude}
+      />
+
+      <PromoteIncidentModal
+        open={promote}
+        request={req}
+        onClose={() => setPromote(false)}
+        onCreated={(inc) => { setReq((r) => ({ ...r, incident_id: inc.id, incident_title: inc.title })); onChanged?.(); }}
+      />
+      <PlaceShelterModal
+        open={place}
+        request={req}
+        onClose={() => setPlace(false)}
+        onPlaced={(res) => { setReq((r) => ({ ...r, status: res?.request?.status || "resolved", shelter_id: res?.shelter?.id })); onChanged?.(); }}
       />
     </>
   );

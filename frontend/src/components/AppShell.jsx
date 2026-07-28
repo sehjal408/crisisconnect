@@ -5,6 +5,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { isDemo } from "../api/services";
 import { Logo, cx } from "./ui";
+import NotificationsBell from "./NotificationsBell";
 
 const NAV = {
   citizen: [
@@ -37,8 +38,9 @@ export default function AppShell({ children }) {
 
       {/* Sidebar */}
       <aside className="glass sticky top-0 z-20 hidden h-screen w-[248px] shrink-0 flex-col border-r border-line px-4 py-5 md:flex">
-        <div className="px-2">
+        <div className="flex items-center justify-between px-2">
           <Logo />
+          <NotificationsBell />
         </div>
 
         <nav className="mt-7 flex-1 space-y-1">
@@ -88,9 +90,12 @@ export default function AppShell({ children }) {
       {/* Mobile top bar */}
       <header className="glass sticky top-0 z-20 flex items-center justify-between border-b border-line px-4 py-3 md:hidden">
         <Logo />
-        <button onClick={() => { logout(); navigate("/login"); }} className="text-sm text-muted">
-          Sign out
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationsBell />
+          <button onClick={() => { logout(); navigate("/login"); }} className="text-sm text-muted">
+            Sign out
+          </button>
+        </div>
       </header>
 
       {/* Content */}

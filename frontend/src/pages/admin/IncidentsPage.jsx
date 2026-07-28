@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Icons from "lucide-react";
-import { BadgeCheck, Clock, RefreshCw } from "lucide-react";
+import { BadgeCheck, Clock, RefreshCw, GitMerge } from "lucide-react";
 import { incidents as incidentsApi, shelters as sheltersApi } from "../../api/services";
 import { SEVERITY, INCIDENT_TYPE, timeAgo, titleCase } from "../../lib/meta";
 import AppShell from "../../components/AppShell";
@@ -9,7 +9,17 @@ import RoadmapNote from "../../components/RoadmapNote";
 import IncidentDetailModal from "../../components/IncidentDetailModal";
 import IncidentTypeFilter from "../../components/IncidentTypeFilter";
 import SeverityFilter from "../../components/SeverityFilter";
-import { Card, Badge, Button, PageHeader, Spinner, SeverityDot } from "../../components/ui";
+import { Card, Badge, Button, PageHeader, Spinner, SeverityDot, cx } from "../../components/ui";
+
+// A labelled row inside the filter panel: small caption on the left, chips on the right.
+function FilterRow({ label, children }) {
+  return (
+    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+      <span className="w-[74px] shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</span>
+      <div className="flex flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
 
 export default function AdminIncidentsPage() {
   const [rows, setRows] = useState([]);
@@ -20,19 +30,50 @@ export default function AdminIncidentsPage() {
   const [active, setActive] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [feedMsg, setFeedMsg] = useState("");
+  const [statusView, setStatusView] = useState("all"); // all | pending | verified | dismissed | merged
+  const [dismissed, setDismissed] = useState([]);
+  const [merged, setMerged] = useState([]);
+  const [busy, setBusy] = useState(null);
 
+  // Active incidents (rows) exclude dismissed + merged duplicates; those are fetched
+  // separately so admins can review — and undo — them from their own filters.
+  async function reload() {
+    const [active, dism, mrg] = await Promise.all([
+      incidentsApi.list(),
+      incidentsApi.list({ status: "dismissed" }),
+      incidentsApi.list({ merged: 1 }),
+    ]);
+    setRows(active);
+    setDismissed(dism);
+    setMerged(mrg);
+  }
   useEffect(() => {
-    Promise.all([incidentsApi.list().then(setRows), sheltersApi.list().then(setShelters)])
-      .finally(() => setLoading(false));
+    Promise.all([reload(), sheltersApi.list().then(setShelters)]).finally(() => setLoading(false));
   }, []);
+
+  const pendingCount = useMemo(() => rows.filter((r) => r.status === "pending").length, [rows]);
+  const verifiedCount = useMemo(() => rows.filter((r) => r.status === "verified").length, [rows]);
+
+  // Verify / dismiss a pending incident, restore a dismissed one, or unmerge a duplicate.
+  async function moderate(i, kind) {
+    setBusy(i.id);
+    try {
+      if (kind === "dismiss") await incidentsApi.dismiss(i.id);
+      else if (kind === "unmerge") await incidentsApi.unmerge(i.id);
+      else await incidentsApi.verify(i.id);
+      await reload();
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function refreshFeeds() {
     setRefreshing(true);
     try {
       const summary = await incidentsApi.ingest();
       const t = summary.reduce((a, s) => ({ n: a.n + s.inserted, u: a.u + s.updated }), { n: 0, u: 0 });
-      setFeedMsg(`Updated from live feeds — ${t.n} new, ${t.u} refreshed.`);
-      setRows(await incidentsApi.list());
+      setFeedMsg(`Updated from live feeds — ${t.n} new, ${t.u} refreshed · duplicates merged automatically.`);
+      await reload();
     } catch {
       setFeedMsg("Could not reach the live feeds right now.");
     } finally {
@@ -40,10 +81,13 @@ export default function AdminIncidentsPage() {
     }
   }
 
-  const filtered = useMemo(
-    () => rows.filter((r) => (types.length === 0 || types.includes(r.type)) && (sev === "all" || r.severity === sev)),
-    [rows, types, sev]
-  );
+  const filtered = useMemo(() => {
+    const base = statusView === "dismissed" ? dismissed : statusView === "merged" ? merged : rows;
+    return base.filter((r) =>
+      (types.length === 0 || types.includes(r.type)) &&
+      (sev === "all" || r.severity === sev) &&
+      (statusView === "all" || statusView === "dismissed" || statusView === "merged" || r.status === statusView));
+  }, [rows, dismissed, merged, types, sev, statusView]);
 
   if (loading) return <AppShell><Spinner label="Loading incidents…" /></AppShell>;
 
@@ -56,25 +100,43 @@ export default function AdminIncidentsPage() {
         actions={<Button icon={RefreshCw} onClick={refreshFeeds} loading={refreshing}>Refresh feeds</Button>}
       />
 
-      <div className="mb-4 flex flex-col gap-1 rounded-2xl border border-teal-100 bg-teal-50/70 px-4 py-3">
-        <p className="text-[13px] text-teal-800">
-          <span className="font-semibold">Live B.C. feeds:</span> earthquakes (USGS) · wildfires (BC Wildfire) ·
-          weather &amp; air quality (Environment Canada) · floods (BC River Forecast) · road events (DriveBC) ·
-          evacuations (EmergencyInfoBC). Filtered to British Columbia; new incidents arrive as <em>pending</em> to verify.
-        </p>
-        {feedMsg && <p className="text-[12.5px] font-medium text-teal-700">{feedMsg}</p>}
+      <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-teal-100 bg-teal-50/60 px-3.5 py-2 text-[12.5px]">
+        <span className="font-semibold text-teal-800">Live from 7 official B.C. sources</span>
+        <span className="text-teal-700/80">USGS · BC Wildfire · Env. Canada · River Forecast · DriveBC · EmergencyInfoBC · AQHI — filtered to B.C.</span>
+        {feedMsg && <span className="font-medium text-teal-700">· {feedMsg}</span>}
       </div>
 
       <RoadmapNote
         week="Week 10"
         items={[
           "Cross-source de-duplication of overlapping alerts",
-          "Admin verification of feed incidents (pending → verified)",
+          "Shelter alerts & citizen notifications",
         ]}
       />
 
-      <SeverityFilter value={sev} onChange={setSev} className="mb-2" />
-      <IncidentTypeFilter incidents={rows} value={types} onChange={setTypes} className="mb-3" />
+      <div className="mb-5 space-y-2.5 rounded-2xl border border-line bg-white/50 p-4">
+        <FilterRow label="Status">
+          {[
+            { key: "all", label: "All", n: rows.length },
+            { key: "pending", label: "Needs verification", n: pendingCount },
+            { key: "verified", label: "Verified", n: verifiedCount },
+            { key: "dismissed", label: "Dismissed", n: dismissed.length },
+            { key: "merged", label: "Merged", n: merged.length },
+          ].map((s) => (
+            <button key={s.key} onClick={() => setStatusView(s.key)}
+              className={cx("inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition",
+                statusView === s.key ? "bg-ink text-white shadow-soft" : "bg-white text-body hairline hover:bg-line-soft")}>
+              {s.label} <span className={cx(statusView === s.key ? "text-white/70" : "text-muted")}>{s.n}</span>
+            </button>
+          ))}
+        </FilterRow>
+        <FilterRow label="Severity">
+          <SeverityFilter value={sev} onChange={setSev} />
+        </FilterRow>
+        <FilterRow label="Type">
+          <IncidentTypeFilter incidents={rows} value={types} onChange={setTypes} />
+        </FilterRow>
+      </div>
 
       <CrisisMap incidents={filtered} shelters={shelters} height={560} />
 
@@ -98,14 +160,35 @@ export default function AdminIncidentsPage() {
                     <p className="text-[14.5px] font-semibold text-ink">{i.title}</p>
                     <SeverityDot color={SEVERITY[i.severity]?.color} size={8} />
                   </div>
-                  <p className="text-[12px] text-muted">{t.label} · {i.source} · {timeAgo(i.updated_at)}</p>
+                  <p className="text-[12px] text-muted">
+                    {t.label} · {i.source === "citizen" ? "Citizen report" : i.source} · {timeAgo(i.updated_at)}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5" onClick={(e) => e.stopPropagation()}>
                 <Badge tone={i.severity === "critical" ? "red" : i.severity === "high" ? "amber" : "slate"}>{SEVERITY[i.severity]?.label}</Badge>
-                {pending
-                  ? <Badge tone="slate"><Clock size={12} /> Pending</Badge>
-                  : <Badge tone="green"><BadgeCheck size={12} /> {titleCase(i.status)}</Badge>}
+                {i.duplicate_of ? (
+                  <>
+                    <Badge tone="slate"><GitMerge size={12} /> Merged</Badge>
+                    <span className="text-[12px] text-muted">→ {i.merged_into_title}</span>
+                    <Button size="sm" variant="subtle" loading={busy === i.id} onClick={() => moderate(i, "unmerge")}>Unmerge</Button>
+                  </>
+                ) : pending ? (
+                  <>
+                    <Badge tone="slate"><Clock size={12} /> Pending</Badge>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="accent" loading={busy === i.id} onClick={() => moderate(i, "verify")}>Verify</Button>
+                      <Button size="sm" variant="ghost" loading={busy === i.id} onClick={() => moderate(i, "dismiss")}>Dismiss</Button>
+                    </div>
+                  </>
+                ) : i.status === "dismissed" ? (
+                  <>
+                    <Badge tone="red">Dismissed</Badge>
+                    <Button size="sm" variant="subtle" loading={busy === i.id} onClick={() => moderate(i, "verify")}>Restore</Button>
+                  </>
+                ) : (
+                  <Badge tone="green"><BadgeCheck size={12} /> {titleCase(i.status)}</Badge>
+                )}
               </div>
             </Card>
           );

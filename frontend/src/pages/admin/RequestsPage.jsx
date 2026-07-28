@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Icons from "lucide-react";
-import { UserCheck, Check, Navigation, ChevronRight, Sparkles } from "lucide-react";
+import { UserCheck, Check, Navigation, ChevronRight, Sparkles, MapPin, House } from "lucide-react";
 import { requests as requestsApi, volunteers as volApi } from "../../api/services";
 import { REQUEST_TYPE, REQUEST_STATUS, PRIORITY, priorityBand, timeAgo } from "../../lib/meta";
 import AppShell from "../../components/AppShell";
 import LocationModal from "../../components/LocationModal";
 import RoadmapNote from "../../components/RoadmapNote";
 import RequestDetailModal from "../../components/RequestDetailModal";
+import PromoteIncidentModal from "../../components/PromoteIncidentModal";
+import PlaceShelterModal from "../../components/PlaceShelterModal";
 import { Card, Button, Badge, Select, PageHeader, Spinner, EmptyState, cx } from "../../components/ui";
 
 const TABS = [
@@ -25,6 +27,8 @@ export default function AdminRequestsPage() {
   const [busy, setBusy] = useState(null);
   const [locReq, setLocReq] = useState(null);
   const [active, setActive] = useState(null);
+  const [promoteReq, setPromoteReq] = useState(null);
+  const [placeReq, setPlaceReq] = useState(null);
 
   function load() {
     return Promise.all([requestsApi.all().then(setRows), volApi.available().then(setVols)]);
@@ -55,13 +59,9 @@ export default function AdminRequestsPage() {
     <AppShell>
       <PageHeader eyebrow="Triage" title="Request queue" subtitle="AI-ranked by urgency — an administrator makes the final decision." />
 
-      <div className="mb-5 flex items-start gap-2.5 rounded-2xl border border-teal-100 bg-teal-50/70 px-4 py-3">
-        <Sparkles size={16} className="mt-0.5 shrink-0 text-teal-600" />
-        <p className="text-[13px] text-teal-800">
-          <span className="font-semibold">AI auto-triage is live.</span> New requests are scored for
-          urgency and sorted to the top automatically. The score is a suggestion — you still review,
-          assign, and resolve every request.
-        </p>
+      <div className="mb-5 flex items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/60 px-3.5 py-2 text-[12.5px] text-teal-800">
+        <Sparkles size={14} className="shrink-0 text-teal-600" />
+        <span><span className="font-semibold">AI auto-triage is live</span> — requests are scored and sorted by urgency; you make the final call.</span>
       </div>
 
       <RoadmapNote
@@ -147,6 +147,12 @@ export default function AdminRequestsPage() {
                         ))}
                       </Select>
                     )}
+                    {!r.incident_id && (
+                      <Button size="sm" variant="subtle" icon={MapPin} onClick={() => setPromoteReq(r)}>Create incident</Button>
+                    )}
+                    {r.request_type === "shelter" && !["resolved", "closed"].includes(r.status) && (
+                      <Button size="sm" variant="subtle" icon={House} onClick={() => setPlaceReq(r)}>Place in shelter</Button>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {r.status === "pending" && (
                         <Button size="sm" variant="subtle" className="flex-1" onClick={() => setStatus(r, "reviewed")} loading={busy === r.id}>Mark reviewed</Button>
@@ -174,7 +180,19 @@ export default function AdminRequestsPage() {
         latitude={locReq?.latitude}
         longitude={locReq?.longitude}
       />
-      <RequestDetailModal open={!!active} onClose={() => setActive(null)} request={active} role="admin" />
+      <RequestDetailModal open={!!active} onClose={() => setActive(null)} request={active} role="admin" volunteers={vols} onChanged={load} />
+      <PromoteIncidentModal
+        open={!!promoteReq}
+        request={promoteReq}
+        onClose={() => setPromoteReq(null)}
+        onCreated={() => { setPromoteReq(null); load(); }}
+      />
+      <PlaceShelterModal
+        open={!!placeReq}
+        request={placeReq}
+        onClose={() => setPlaceReq(null)}
+        onPlaced={() => { setPlaceReq(null); load(); }}
+      />
     </AppShell>
   );
 }
