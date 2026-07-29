@@ -28,3 +28,6 @@ Thumbs.db
 # Caches
 .vite/
 .cache/
+
+# Uploaded request photos (served locally; use cloud storage in production)
+uploads/

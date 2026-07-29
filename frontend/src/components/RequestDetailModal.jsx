@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import * as Icons from "lucide-react";
-import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera, Sparkles, House } from "lucide-react";
+import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera, Sparkles, House, X, ZoomIn } from "lucide-react";
 import { REQUEST_TYPE, REQUEST_STATUS, ASSIGNMENT_STATUS, PRIORITY, priorityBand, fullDate } from "../lib/meta";
 import { requests as requestsApi } from "../api/services";
 import { Drawer, Badge, StatusTimeline, DetailRow, Button, Select } from "./ui";
@@ -22,6 +23,7 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
   const [busy, setBusy] = useState(false);
   const [promote, setPromote] = useState(false);
   const [place, setPlace] = useState(false);
+  const [lightbox, setLightbox] = useState(null);
 
   useEffect(() => { setReq(request); }, [request]);
   if (!req) return null;
@@ -156,13 +158,22 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
           </p>
           {attachments.length ? (
             <div className="grid grid-cols-3 gap-2">
-              {attachments.map((a, i) => (
-                <img key={i} src={a.url || a} alt="" className="h-24 w-full rounded-xl object-cover hairline" />
-              ))}
+              {attachments.map((a, i) => {
+                const url = a.url || a;
+                return (
+                  <button key={i} type="button" onClick={() => setLightbox(url)}
+                    className="group relative h-24 w-full overflow-hidden rounded-xl hairline">
+                    <img src={url} alt="" className="h-full w-full object-cover transition group-hover:scale-105" />
+                    <span className="absolute inset-0 grid place-items-center bg-ink/0 text-white/0 transition group-hover:bg-ink/35 group-hover:text-white">
+                      <ZoomIn size={18} />
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="flex items-center gap-2 rounded-xl bg-line-soft/60 px-3 py-3 text-[12.5px] text-muted">
-              <Camera size={15} /> No photos attached — photo upload arrives in Week 11.
+              <Camera size={15} /> No photos attached.
             </div>
           )}
         </div>
@@ -189,6 +200,17 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
         onClose={() => setPlace(false)}
         onPlaced={(res) => { setReq((r) => ({ ...r, status: res?.request?.status || "resolved", shelter_id: res?.shelter?.id })); onChanged?.(); }}
       />
+
+      {lightbox && createPortal(
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 animate-fade" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="Attachment" className="max-h-[90vh] max-w-[92vw] rounded-xl object-contain shadow-pop" onClick={(e) => e.stopPropagation()} />
+          <button onClick={() => setLightbox(null)} aria-label="Close"
+            className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25">
+            <X size={20} />
+          </button>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

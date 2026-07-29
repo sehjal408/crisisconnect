@@ -22,14 +22,45 @@ function severityFromScore(score) {
 // HUMAN-IN-THE-LOOP: the score is only a suggestion; an administrator still
 // reviews, assigns, and resolves every request (review -> assign -> resolve).
 
+// Aggregate a request's photo attachments as a JSON array (empty array if none).
+const ATTACHMENTS_SUBQUERY = `
+  (SELECT COALESCE(json_agg(json_build_object('id', at.id, 'url', at.file_path, 'file_type', at.file_type)
+                            ORDER BY at.uploaded_at), '[]')
+     FROM attachments at WHERE at.request_id = r.id) AS attachments`;
+
 // Citizen: my own requests
 async function myRequests(req, res, next) {
   try {
     const result = await pool.query(
-      `SELECT * FROM requests WHERE citizen_id = $1 ORDER BY created_at DESC`,
+      `SELECT r.*, ${ATTACHMENTS_SUBQUERY}
+         FROM requests r WHERE r.citizen_id = $1 ORDER BY r.created_at DESC`,
       [req.user.id]
     );
     return res.json({ requests: result.rows });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Citizen (own request) or admin: attach photos to a request.
+async function uploadAttachments(req, res, next) {
+  try {
+    const request = (await pool.query(`SELECT citizen_id FROM requests WHERE id = $1`, [req.params.id])).rows[0];
+    if (!request) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Request not found" } });
+    if (req.user.role === "citizen" && request.citizen_id !== req.user.id) {
+      return res.status(403).json({ error: { code: "FORBIDDEN", message: "You can only attach photos to your own request" } });
+    }
+    const files = req.files || [];
+    const out = [];
+    for (const f of files) {
+      const r = await pool.query(
+        `INSERT INTO attachments (request_id, file_path, file_type) VALUES ($1, $2, $3)
+         RETURNING id, file_path AS url, file_type`,
+        [req.params.id, `/api/v1/uploads/${f.filename}`, f.mimetype]
+      );
+      out.push(r.rows[0]);
+    }
+    return res.status(201).json({ attachments: out });
   } catch (err) {
     return next(err);
   }
@@ -82,7 +113,8 @@ async function listRequests(req, res, next) {
     }
     const result = await pool.query(
       `SELECT r.*, cu.name AS citizen_name, i.title AS incident_title,
-              a.id AS assignment_id, a.volunteer_id AS assignment_volunteer_id, a.status AS assignment_status
+              a.id AS assignment_id, a.volunteer_id AS assignment_volunteer_id, a.status AS assignment_status,
+              ${ATTACHMENTS_SUBQUERY}
        FROM requests r
        JOIN users cu ON cu.id = r.citizen_id
        LEFT JOIN incidents i ON i.id = r.incident_id
@@ -111,14 +143,15 @@ async function updateRequest(req, res, next) {
     if (!allowed.includes(status)) {
       return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid status value" } });
     }
+    const isResolved = ["resolved", "closed"].includes(status);
     const result = await pool.query(
       `UPDATE requests
           SET status = $1,
-              resolved_at = CASE WHEN $1 IN ('resolved','closed') AND resolved_at IS NULL THEN now()
-                                 WHEN $1 NOT IN ('resolved','closed') THEN NULL
+              resolved_at = CASE WHEN $2::boolean AND resolved_at IS NULL THEN now()
+                                 WHEN NOT $2::boolean THEN NULL
                                  ELSE resolved_at END
-        WHERE id = $2 RETURNING *`,
-      [status, req.params.id]
+        WHERE id = $3 RETURNING *`,
+      [status, isResolved, req.params.id]
     );
     if (!result.rows[0]) {
       return res.status(404).json({ error: { code: "NOT_FOUND", message: "Request not found" } });
@@ -298,4 +331,4 @@ async function placeInShelter(req, res, next) {
   }
 }
 
-module.exports = { myRequests, createRequest, listRequests, updateRequest, assignRequest, createIncidentFromRequest, placeInShelter };
+module.exports = { myRequests, createRequest, listRequests, updateRequest, assignRequest, createIncidentFromRequest, placeInShelter, uploadAttachments };

@@ -1,14 +1,17 @@
 const express = require("express");
 const {
-  myRequests, createRequest, listRequests, updateRequest, assignRequest, createIncidentFromRequest, placeInShelter,
+  myRequests, createRequest, listRequests, updateRequest, assignRequest, createIncidentFromRequest, placeInShelter, uploadAttachments,
 } = require("../controllers/requestController");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { upload } = require("../config/upload");
 
 const router = express.Router();
 
 // Citizen
 router.get("/mine", requireAuth, requireRole("citizen"), myRequests);
 router.post("/", requireAuth, requireRole("citizen"), createRequest);
+// Attach photos to a request (owner citizen or admin).
+router.post("/:id/attachments", requireAuth, upload.array("photos", 5), uploadAttachments);
 
 // Admin
 router.get("/", requireAuth, requireRole("admin"), listRequests);

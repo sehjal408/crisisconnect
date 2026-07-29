@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as Icons from "lucide-react";
-import { UserCheck, Check, Navigation, ChevronRight, Sparkles, MapPin, House } from "lucide-react";
+import { UserCheck, Check, Navigation, Sparkles, MapPin, House, X, User, Users, AlertTriangle } from "lucide-react";
 import { requests as requestsApi, volunteers as volApi } from "../../api/services";
 import { REQUEST_TYPE, REQUEST_STATUS, PRIORITY, priorityBand, timeAgo } from "../../lib/meta";
 import AppShell from "../../components/AppShell";
@@ -9,6 +9,7 @@ import RoadmapNote from "../../components/RoadmapNote";
 import RequestDetailModal from "../../components/RequestDetailModal";
 import PromoteIncidentModal from "../../components/PromoteIncidentModal";
 import PlaceShelterModal from "../../components/PlaceShelterModal";
+import ActionMenu from "../../components/ActionMenu";
 import { Card, Button, Badge, Select, PageHeader, Spinner, EmptyState, cx } from "../../components/ui";
 
 const TABS = [
@@ -44,15 +45,13 @@ export default function AdminRequestsPage() {
   async function assign(r, volunteerId) {
     if (!volunteerId) return;
     setBusy(r.id);
-    await requestsApi.assign(r.id, Number(volunteerId));
-    await load();
-    setBusy(null);
+    try { await requestsApi.assign(r.id, Number(volunteerId)); await load(); }
+    finally { setBusy(null); }
   }
   async function setStatus(r, status) {
     setBusy(r.id);
-    await requestsApi.setStatus(r.id, status);
-    await load();
-    setBusy(null);
+    try { await requestsApi.setStatus(r.id, status); await load(); }
+    finally { setBusy(null); }
   }
 
   return (
@@ -96,74 +95,83 @@ export default function AdminRequestsPage() {
             const st = REQUEST_STATUS[r.status] || { label: r.status, tone: "slate" };
             const band = priorityBand(r.priority_score);
             const pri = band ? PRIORITY[band] : null;
+            const priColor = pri ? pri.color : "#8a97a3";
             const assignedVol = r.assignment ? vols.find((v) => v.id === r.assignment.volunteer_id) : null;
             return (
-              <Card key={r.id} className="p-5" hover>
+              <Card key={r.id} className="p-4 sm:p-5" hover>
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  {/* left: details (click to open) */}
-                  <div className="group flex cursor-pointer gap-4" onClick={() => setActive(r)}>
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-teal-50 text-teal-600"><Icon size={20} /></span>
-                    <div className="min-w-0">
+                  {/* main content — click to open the detail drawer */}
+                  <div className="group flex min-w-0 flex-1 cursor-pointer gap-3.5" onClick={() => setActive(r)}>
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl" style={{ background: `${priColor}14`, color: priColor }}>
+                      <Icon size={20} />
+                    </span>
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-[15px] font-semibold text-ink group-hover:text-teal-600">{type.label}</p>
-                        {pri && <Badge tone={pri.tone} dot>{pri.label} · {r.priority_score}</Badge>}
+                        <p className="truncate text-[15px] font-semibold text-ink group-hover:text-teal-600">{type.label}</p>
+                        {pri && <Badge tone={pri.tone} dot>{pri.label}</Badge>}
                         <Badge tone={st.tone} dot>{st.label}</Badge>
-                        {r.incident_title && <span className="text-[12px] text-muted">· {r.incident_title}</span>}
-                        {r.affected_count > 1 && <span className="text-[12px] text-muted">· {r.affected_count} people</span>}
+                        {r.affected_count > 1 && (
+                          <span className="inline-flex items-center gap-1 text-[11.5px] text-muted"><Users size={12} /> {r.affected_count}</span>
+                        )}
                       </div>
-                      <p className="mt-1 line-clamp-1 text-[13.5px] text-body">{r.description}</p>
+
+                      <p className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed text-body">{r.description}</p>
+
                       {r.ai_summary && (
-                        <p className="mt-1 flex items-start gap-1.5 text-[12.5px] text-muted">
+                        <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-teal-50/60 px-2.5 py-1.5 text-[12px] text-teal-800">
                           <Sparkles size={12} className="mt-[3px] shrink-0 text-teal-500" />
-                          <span className="line-clamp-1"><span className="font-semibold text-teal-600">AI</span> · {r.ai_summary}</span>
+                          <span className="line-clamp-2"><span className="font-semibold">AI triage</span> · {r.ai_summary}</span>
                         </p>
                       )}
-                      <p className="mt-1 text-[12px] text-muted">
-                        {r.citizen_name} · {r.address || "—"} · {timeAgo(r.created_at)}
+
+                      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
+                        <span className="inline-flex items-center gap-1"><User size={12} /> {r.citizen_name}</span>
+                        {r.address && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {r.address}</span>}
+                        <span>{timeAgo(r.created_at)}</span>
+                        {r.incident_title && (
+                          <span className="inline-flex items-center gap-1"><AlertTriangle size={12} /> {r.incident_title}</span>
+                        )}
                         {(r.address || r.latitude != null) && (
                           <button type="button" onClick={(e) => { e.stopPropagation(); setLocReq(r); }}
-                            className="ml-2 inline-flex items-center gap-1 font-semibold text-teal-600 hover:underline">
+                            className="inline-flex items-center gap-1 font-medium text-teal-600 hover:underline">
                             <Navigation size={12} /> Map
                           </button>
                         )}
-                        <span className="ml-2 inline-flex items-center gap-0.5 font-semibold text-teal-600">
-                          Details <ChevronRight size={12} />
-                        </span>
-                      </p>
+                      </div>
                     </div>
                   </div>
 
                   {/* right: actions */}
-                  <div className="flex shrink-0 flex-col gap-2 lg:w-56">
-                    {assignedVol ? (
-                      <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-3 py-2 text-[13px] text-teal-600">
-                        <UserCheck size={15} /> Assigned to {assignedVol.name}
+                  <div className="flex shrink-0 flex-col gap-2 lg:w-52">
+                    {["resolved", "closed"].includes(r.status) ? (
+                      <div className="rounded-xl bg-line-soft/70 px-3 py-2 text-center text-[13px] font-medium text-muted">
+                        {(REQUEST_STATUS[r.status] || {}).label || r.status}
                       </div>
                     ) : (
-                      <Select disabled={busy === r.id} defaultValue="" onChange={(e) => assign(r, e.target.value)}>
-                        <option value="" disabled>Assign volunteer…</option>
-                        {vols.map((v) => (
-                          <option key={v.id} value={v.id}>{v.name}{v.availability !== "available" ? " (busy)" : ""}</option>
-                        ))}
-                      </Select>
+                      <>
+                        {assignedVol ? (
+                          <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-3 py-2 text-[13px] font-medium text-teal-600">
+                            <UserCheck size={15} /> {assignedVol.name}
+                          </div>
+                        ) : (
+                          <Select disabled={busy === r.id} defaultValue="" onChange={(e) => assign(r, e.target.value)}>
+                            <option value="" disabled>Assign volunteer…</option>
+                            {vols.map((v) => (
+                              <option key={v.id} value={v.id}>{v.name}{v.availability !== "available" ? " (busy)" : ""}</option>
+                            ))}
+                          </Select>
+                        )}
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="accent" className="flex-1" loading={busy === r.id} onClick={() => setStatus(r, "resolved")}>Resolve</Button>
+                          <ActionMenu items={[
+                            r.status === "pending" && { label: "Mark reviewed", icon: Check, onClick: () => setStatus(r, "reviewed") },
+                            !r.incident_id && { label: "Create incident", icon: MapPin, onClick: () => setPromoteReq(r) },
+                            r.request_type === "shelter" && { label: "Place in shelter", icon: House, onClick: () => setPlaceReq(r) },
+                            { label: "Close request", icon: X, onClick: () => setStatus(r, "closed"), danger: true },
+                          ].filter(Boolean)} />
+                        </div>
+                      </>
                     )}
-                    {!r.incident_id && (
-                      <Button size="sm" variant="subtle" icon={MapPin} onClick={() => setPromoteReq(r)}>Create incident</Button>
-                    )}
-                    {r.request_type === "shelter" && !["resolved", "closed"].includes(r.status) && (
-                      <Button size="sm" variant="subtle" icon={House} onClick={() => setPlaceReq(r)}>Place in shelter</Button>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {r.status === "pending" && (
-                        <Button size="sm" variant="subtle" className="flex-1" onClick={() => setStatus(r, "reviewed")} loading={busy === r.id}>Mark reviewed</Button>
-                      )}
-                      {!["resolved", "closed"].includes(r.status) && (
-                        <Button size="sm" variant="accent" className="flex-1" onClick={() => setStatus(r, "resolved")} loading={busy === r.id}>Resolve</Button>
-                      )}
-                      {!["resolved", "closed"].includes(r.status) && (
-                        <Button size="sm" variant="ghost" onClick={() => setStatus(r, "closed")} loading={busy === r.id}>Close</Button>
-                      )}
-                    </div>
                   </div>
                 </div>
               </Card>
