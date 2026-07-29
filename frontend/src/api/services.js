@@ -34,6 +34,10 @@ export const auth = {
   register: (payload) =>
     call(() => api.post("/auth/register", payload).then((r) => r.data), () => demo.register(payload)),
   me: () => call(() => api.get("/auth/me").then((r) => r.data), () => demo.me(currentUserId())),
+  updateProfile: (patch) =>
+    call(() => api.put("/auth/me", patch).then((r) => r.data.user), () => demo.updateProfile(currentUserId(), patch)),
+  changePassword: (current_password, new_password) =>
+    call(() => api.post("/auth/password", { current_password, new_password }).then(() => true), () => demo.changePassword(currentUserId(), current_password, new_password)),
 };
 
 export const incidents = {
@@ -70,6 +74,12 @@ export const requests = {
   createIncident: (id, payload) => api.post(`/requests/${id}/incident`, payload).then((r) => r.data.incident),
   // Admin: place a citizen request into a shelter (consumes beds, links, resolves).
   place: (id, shelterId) => api.post(`/requests/${id}/place`, { shelter_id: shelterId }).then((r) => r.data),
+  // Attach photos to a request (multipart).
+  addAttachments: (id, files) => {
+    const fd = new FormData();
+    for (const f of files) fd.append("photos", f);
+    return api.post(`/requests/${id}/attachments`, fd).then((r) => r.data.attachments);
+  },
 };
 
 export const volunteers = {
@@ -80,6 +90,10 @@ export const volunteers = {
     call(() => api.get("/volunteers/me/assignments").then((r) => r.data.assignments), () => demo.volunteerAssignments(currentUserId())),
   available: () =>
     call(() => api.get("/volunteers", { params: { availability: "available" } }).then((r) => r.data.volunteers), () => demo.availableVolunteers()),
+  // Admin: full roster (all statuses) + verification management.
+  manage: () => call(() => api.get("/volunteers/manage").then((r) => r.data.volunteers), () => demo.manageVolunteers()),
+  setVerification: (id, status) =>
+    call(() => api.patch(`/volunteers/${id}/verification`, { status }).then((r) => r.data.volunteer), () => demo.setVerification(id, status)),
 };
 
 export const assignments = {

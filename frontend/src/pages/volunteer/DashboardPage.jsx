@@ -3,7 +3,7 @@ import * as Icons from "lucide-react";
 import { MapPin, CheckCircle2, Car, ClipboardList, Navigation } from "lucide-react";
 import { volunteers as volApi, assignments as assignApi } from "../../api/services";
 import { useAuth } from "../../context/AuthContext";
-import { REQUEST_TYPE, ASSIGNMENT_STATUS, SKILLS, SEVERITY, timeAgo } from "../../lib/meta";
+import { REQUEST_TYPE, ASSIGNMENT_STATUS, SKILLS, CERTIFICATIONS, VERIFICATION_STATUS, SEVERITY, timeAgo } from "../../lib/meta";
 import AppShell from "../../components/AppShell";
 import LocationModal from "../../components/LocationModal";
 import RoadmapNote from "../../components/RoadmapNote";
@@ -73,11 +73,15 @@ export default function VolunteerDashboardPage() {
             <div>
               <p className="text-[16px] font-semibold text-ink">{user?.name}</p>
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {vol && (() => { const vs = VERIFICATION_STATUS[vol.verification_status] || VERIFICATION_STATUS.pending; return <Badge tone={vs.tone} dot>{vs.label}</Badge>; })()}
                 {(vol?.skills || []).map((s) => (
                   <Badge key={s} tone="slate">{SKILLS[s] || s}</Badge>
                 ))}
+                {(vol?.certifications || []).map((c) => (
+                  <Badge key={c} tone="teal">{CERTIFICATIONS[c] || c}</Badge>
+                ))}
                 {vol?.vehicle_available && <Badge tone="blue"><Car size={12} /> Has vehicle</Badge>}
-                {!vol?.skills?.length && <span className="text-[13px] text-muted">No skills listed yet</span>}
+                {!vol?.skills?.length && !vol?.certifications?.length && <span className="text-[13px] text-muted">No skills listed yet</span>}
               </div>
             </div>
           </div>

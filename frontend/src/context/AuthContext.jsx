@@ -35,6 +35,16 @@ export function AuthProvider({ children }) {
     [persist]
   );
 
+  // Merge fresh fields into the stored user (e.g. after a profile edit) so the
+  // sidebar and greetings update without a re-login.
+  const updateUser = useCallback((patch) => {
+    setUser((prev) => {
+      const next = { ...prev, ...patch };
+      localStorage.setItem("crisisconnect_user", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("crisisconnect_token");
     localStorage.removeItem("crisisconnect_user");
@@ -43,7 +53,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, login, register, logout }}>
+    <AuthContext.Provider value={{ token, user, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

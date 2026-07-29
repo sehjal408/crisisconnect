@@ -78,6 +78,22 @@ export const SKILLS = {
   counselling: "Counselling",
 };
 
+// Lightweight, self-declared credentials — reviewed by an admin at verification.
+export const CERTIFICATIONS = {
+  first_aid_cert: "First Aid certificate",
+  cpr: "CPR",
+  medical_professional: "Medical professional",
+  search_rescue_cert: "Search & Rescue",
+  drivers_licence: "Driver's licence",
+  food_safe: "FoodSafe",
+};
+
+export const VERIFICATION_STATUS = {
+  pending: { label: "Pending review", tone: "amber" },
+  verified: { label: "Verified", tone: "green" },
+  rejected: { label: "Not approved", tone: "red" },
+};
+
 export function timeAgo(iso) {
   const d = new Date(iso);
   const s = Math.floor((Date.now() - d.getTime()) / 1000);

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Map, ListChecks, LayoutDashboard, Building2, TriangleAlert, LogOut, HandHelping, PieChart, Radar,
+  Map, ListChecks, LayoutDashboard, Building2, TriangleAlert, LogOut, HandHelping, PieChart, Radar, Users,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { isDemo } from "../api/services";
@@ -18,6 +18,7 @@ const NAV = {
     { to: "/admin/requests", label: "Request queue", icon: ListChecks },
     { to: "/admin/shelters", label: "Shelters", icon: Building2 },
     { to: "/admin/incidents", label: "Incidents", icon: TriangleAlert },
+    { to: "/admin/volunteers", label: "Volunteers", icon: Users },
     { to: "/admin/insights", label: "Insights", icon: PieChart },
     { to: "/admin/command", label: "Command Center", icon: Radar },
   ],
@@ -70,16 +71,18 @@ export default function AppShell({ children }) {
         )}
 
         <div className="flex items-center gap-3 rounded-2xl bg-white p-2.5 hairline">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-navy-700 text-[13px] font-semibold text-white">
-            {initials}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold text-ink">{user?.name}</p>
-            <p className="truncate text-[11px] text-muted">{ROLE_LABEL[user?.role]}</p>
-          </div>
+          <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-3 rounded-xl transition hover:opacity-80" title="View profile">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-navy-700 text-[13px] font-semibold text-white">
+              {initials}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold text-ink">{user?.name}</p>
+              <p className="truncate text-[11px] text-muted">{ROLE_LABEL[user?.role]}</p>
+            </div>
+          </Link>
           <button
             onClick={() => { logout(); navigate("/login"); }}
-            className="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-line-soft hover:text-ink focus-ring"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted transition hover:bg-line-soft hover:text-ink focus-ring"
             title="Sign out"
           >
             <LogOut size={16} />
@@ -90,8 +93,11 @@ export default function AppShell({ children }) {
       {/* Mobile top bar */}
       <header className="glass sticky top-0 z-20 flex items-center justify-between border-b border-line px-4 py-3 md:hidden">
         <Logo />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <NotificationsBell />
+          <Link to="/profile" className="grid h-8 w-8 place-items-center rounded-full bg-navy-700 text-[12px] font-semibold text-white" title="Profile">
+            {initials}
+          </Link>
           <button onClick={() => { logout(); navigate("/login"); }} className="text-sm text-muted">
             Sign out
           </button>

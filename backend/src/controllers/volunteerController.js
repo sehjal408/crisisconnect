@@ -1,9 +1,10 @@
 const pool = require("../config/db");
+const { notify } = require("../services/notify");
 
 async function getMe(req, res, next) {
   try {
     const result = await pool.query(
-      `SELECT v.id, v.skills, v.availability, v.vehicle_available, v.verification_status,
+      `SELECT v.id, v.skills, v.certifications, v.availability, v.vehicle_available, v.verification_status,
               u.name, u.email, u.phone
        FROM volunteers v JOIN users u ON u.id = v.user_id
        WHERE v.user_id = $1`,
@@ -21,7 +22,7 @@ async function getMe(req, res, next) {
 
 async function updateMe(req, res, next) {
   try {
-    const { availability, skills, vehicle_available } = req.body;
+    const { availability, skills, vehicle_available, certifications } = req.body;
 
     if (availability && !["available", "busy", "unavailable"].includes(availability)) {
       return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Invalid availability value" } });
@@ -31,10 +32,11 @@ async function updateMe(req, res, next) {
       `UPDATE volunteers SET
          availability = COALESCE($1, availability),
          skills = COALESCE($2, skills),
-         vehicle_available = COALESCE($3, vehicle_available)
-       WHERE user_id = $4
-       RETURNING id, skills, availability, vehicle_available, verification_status`,
-      [availability ?? null, skills ?? null, vehicle_available ?? null, req.user.id]
+         vehicle_available = COALESCE($3, vehicle_available),
+         certifications = COALESCE($4, certifications)
+       WHERE user_id = $5
+       RETURNING id, skills, certifications, availability, vehicle_available, verification_status`,
+      [availability ?? null, skills ?? null, vehicle_available ?? null, certifications ?? null, req.user.id]
     );
 
     const volunteer = result.rows[0];
@@ -58,13 +60,65 @@ async function listVolunteers(req, res, next) {
       where += ` AND v.availability = $${values.length}`;
     }
     const result = await pool.query(
-      `SELECT v.id, v.skills, v.availability, v.vehicle_available, u.name, u.email
+      `SELECT v.id, v.skills, v.certifications, v.availability, v.vehicle_available, u.name, u.email
        FROM volunteers v JOIN users u ON u.id = v.user_id
        ${where}
        ORDER BY u.name ASC`,
       values
     );
     return res.json({ volunteers: result.rows });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Admin: full volunteer roster (every status) for the verification screen.
+async function listAllVolunteers(req, res, next) {
+  try {
+    const { status } = req.query;
+    const values = [];
+    let where = "";
+    if (status) {
+      values.push(status);
+      where = `WHERE v.verification_status = $${values.length}`;
+    }
+    const result = await pool.query(
+      `SELECT v.id, v.user_id, v.skills, v.certifications, v.availability,
+              v.vehicle_available, v.verification_status,
+              u.name, u.email, u.phone, u.created_at
+       FROM volunteers v JOIN users u ON u.id = v.user_id
+       ${where}
+       ORDER BY (v.verification_status = 'pending') DESC, u.created_at DESC`,
+      values
+    );
+    return res.json({ volunteers: result.rows });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Admin: verify or reject a volunteer (gates whether they can be assigned).
+async function setVerification(req, res, next) {
+  try {
+    const { status } = req.body;
+    if (!["verified", "rejected", "pending"].includes(status)) {
+      return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "status must be 'verified', 'rejected' or 'pending'" } });
+    }
+    const result = await pool.query(
+      `UPDATE volunteers SET verification_status = $1 WHERE id = $2
+       RETURNING id, user_id, verification_status`,
+      [status, req.params.id]
+    );
+    const volunteer = result.rows[0];
+    if (!volunteer) {
+      return res.status(404).json({ error: { code: "NOT_FOUND", message: "Volunteer not found" } });
+    }
+    if (status === "verified") {
+      await notify(volunteer.user_id, "volunteer_verified", "Your volunteer account has been verified — you can now receive assignments.");
+    } else if (status === "rejected") {
+      await notify(volunteer.user_id, "volunteer_rejected", "Your volunteer verification was not approved. Contact an administrator for details.");
+    }
+    return res.json({ volunteer });
   } catch (err) {
     return next(err);
   }
@@ -109,4 +163,4 @@ async function myAssignments(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe, listVolunteers, myAssignments };
+module.exports = { getMe, updateMe, listVolunteers, myAssignments, listAllVolunteers, setVerification };

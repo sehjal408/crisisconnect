@@ -115,6 +115,7 @@ CREATE TABLE volunteers (
     id                  SERIAL PRIMARY KEY,
     user_id             INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
     skills              TEXT[] NOT NULL DEFAULT '{}', -- e.g. {first_aid, driving, translation}
+    certifications      TEXT[] NOT NULL DEFAULT '{}', -- self-declared credentials, admin-reviewed
     availability        VARCHAR(20) NOT NULL DEFAULT 'unavailable'
                         CHECK (availability IN ('available', 'busy', 'unavailable')),
     vehicle_available   BOOLEAN NOT NULL DEFAULT false,

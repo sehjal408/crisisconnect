@@ -124,12 +124,29 @@ export const demo = {
     db.users.push(user);
     if (role === "volunteer") {
       db.volunteers.push({
-        id: ++db.seq.volunteers, user_id: id, skills: [],
-        availability: "unavailable", vehicle_available: false, verification_status: "pending",
+        id: ++db.seq.volunteers, user_id: id,
+        skills: payload.skills || [], certifications: payload.certifications || [],
+        availability: "unavailable", vehicle_available: !!payload.vehicle_available,
+        verification_status: "pending",
       });
     }
     commit();
     return { token: `demo.${id}.${Date.now()}`, user: clone(user) };
+  },
+
+  async updateProfile(userId, patch) {
+    await delay(150);
+    const u = userById(userId);
+    if (!u) throw new Error("Not found");
+    if (patch.name != null) u.name = patch.name;
+    if (patch.phone != null) u.phone = patch.phone;
+    commit();
+    return clone(u);
+  },
+
+  async changePassword() {
+    await delay(150);
+    return true; // demo mode: passwords aren't persisted
   },
 
   async me(userId) {
@@ -227,7 +244,29 @@ export const demo = {
     if (!v) throw new Error("Not found");
     if (patch.availability) v.availability = patch.availability;
     if (patch.skills) v.skills = patch.skills;
+    if (patch.certifications) v.certifications = patch.certifications;
     if (patch.vehicle_available != null) v.vehicle_available = patch.vehicle_available;
+    commit();
+    return clone(v);
+  },
+
+  async manageVolunteers() {
+    await delay(180);
+    return clone(
+      db.volunteers
+        .map((v) => {
+          const u = userById(v.user_id);
+          return { ...v, name: u?.name, email: u?.email, phone: u?.phone, created_at: u?.created_at };
+        })
+        .sort((a, b) => (b.verification_status === "pending") - (a.verification_status === "pending"))
+    );
+  },
+
+  async setVerification(id, status) {
+    await delay(150);
+    const v = db.volunteers.find((x) => x.id === id);
+    if (!v) throw new Error("Not found");
+    v.verification_status = status;
     commit();
     return clone(v);
   },

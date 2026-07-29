@@ -27,6 +27,10 @@ async function runMigrations() {
       CHECK (status IN ('pending','verified','dismissed','assigned','in_progress','resolved','closed'));
   `);
 
+  // Volunteer certifications — lightweight self-declared credentials (First aid,
+  // CPR, etc.) reviewed by an admin during verification. Stored like skills.
+  await db.exec(`ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS certifications TEXT[] DEFAULT '{}';`);
+
   // Week 11 analytics: when a request was resolved (for resolution-time metrics).
   await db.exec(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;`);
 

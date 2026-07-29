@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { HandHelping, LifeBuoy, Loader2, ArrowRight } from "lucide-react";
+import { HandHelping, LifeBuoy, Loader2, ArrowRight, Car, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { SKILLS, CERTIFICATIONS } from "../lib/meta";
 import AuthLayout from "../components/AuthLayout";
+import ChipSelect from "../components/ChipSelect";
 import { cx } from "../components/ui";
 
 const HOME_BY_ROLE = { citizen: "/map", volunteer: "/volunteer", admin: "/admin" };
@@ -15,18 +17,34 @@ const ROLES = [
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", role: "citizen" });
+  const [form, setForm] = useState({
+    name: "", email: "", phone: "", password: "", confirm: "", role: "citizen",
+    skills: [], certifications: [], vehicle_available: false,
+  });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const update = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+  const set = (field, val) => setForm((f) => ({ ...f, [field]: val }));
+  const isVolunteer = form.role === "volunteer";
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    if (form.password.length < 8) return setError("Password must be at least 8 characters.");
+    if (form.password !== form.confirm) return setError("Passwords do not match.");
     setSubmitting(true);
     try {
-      const user = await register(form);
+      const payload = {
+        name: form.name, email: form.email, phone: form.phone,
+        password: form.password, role: form.role,
+      };
+      if (isVolunteer) {
+        payload.skills = form.skills;
+        payload.certifications = form.certifications;
+        payload.vehicle_available = form.vehicle_available;
+      }
+      const user = await register(payload);
       navigate(HOME_BY_ROLE[user.role] || "/");
     } catch (err) {
       setError(err.response?.data?.error?.message || err.message || "Registration failed");
@@ -52,7 +70,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 key={r.value}
-                onClick={() => setForm((f) => ({ ...f, role: r.value }))}
+                onClick={() => set("role", r.value)}
                 className={cx(
                   "flex flex-col items-start gap-2 rounded-2xl p-3.5 text-left transition-all",
                   active ? "bg-teal-50 ring-2 ring-teal" : "bg-white hairline hover:bg-line-soft"
@@ -82,10 +100,44 @@ export default function RegisterPage() {
             <input className="auth-input" value={form.phone} onChange={update("phone")} placeholder="604-555-0100" />
           </div>
         </div>
-        <div>
-          <label className="mb-1.5 block text-[12.5px] font-medium text-body">Password</label>
-          <input className="auth-input" type="password" required value={form.password} onChange={update("password")} placeholder="Create a password" />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-medium text-body">Password</label>
+            <input className="auth-input" type="password" required value={form.password} onChange={update("password")} placeholder="At least 8 characters" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-[12.5px] font-medium text-body">Confirm password</label>
+            <input className="auth-input" type="password" required value={form.confirm} onChange={update("confirm")} placeholder="Re-enter password" />
+          </div>
         </div>
+
+        {/* Volunteer-only profile */}
+        {isVolunteer && (
+          <div className="space-y-4 rounded-2xl bg-line-soft/60 p-4">
+            <div>
+              <label className="mb-2 block text-[12.5px] font-semibold text-body">What can you help with?</label>
+              <ChipSelect options={SKILLS} value={form.skills} onChange={(v) => set("skills", v)} />
+            </div>
+            <div>
+              <label className="mb-2 block text-[12.5px] font-semibold text-body">Certifications <span className="font-normal text-muted">(optional)</span></label>
+              <ChipSelect options={CERTIFICATIONS} value={form.certifications} onChange={(v) => set("certifications", v)} />
+            </div>
+            <button
+              type="button"
+              onClick={() => set("vehicle_available", !form.vehicle_available)}
+              className={cx(
+                "flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all",
+                form.vehicle_available ? "bg-teal-50 text-teal-600 ring-2 ring-teal" : "bg-white text-body hairline hover:bg-line-soft"
+              )}
+            >
+              <Car size={16} /> I have a vehicle available for response
+            </button>
+            <p className="flex items-start gap-2 text-[12px] leading-relaxed text-muted">
+              <ShieldCheck size={14} className="mt-[2px] shrink-0 text-teal-500" />
+              Volunteer accounts are reviewed by an administrator before you can be assigned to tasks.
+            </p>
+          </div>
+        )}
 
         {error && (
           <p className="rounded-xl border border-[#f3c2bd] bg-[#fdecea] px-3 py-2 text-[13px] font-medium text-[#b3392e]">{error}</p>
