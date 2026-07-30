@@ -1,0 +1,63 @@
+# ── CrisisConnect — Render Blueprint ─────────────────────────────────────────
+# One file that tells Render how to deploy the whole app: a PostgreSQL database,
+# the Node/Express backend, and the static React frontend.
+#
+# How to use it: push this repo to GitHub, then on Render click
+#   New +  →  Blueprint  →  pick this repo.
+# Render reads this file and creates all three pieces. See DEPLOYMENT.md for the
+# full walkthrough (including the ANTHROPIC_API_KEY you set by hand).
+
+databases:
+  - name: crisisconnect-db
+    plan: free
+    databaseName: crisisconnect
+    user: crisisconnect
+
+services:
+  # ── Backend API (Node/Express) ─────────────────────────────────────────────
+  - type: web
+    name: crisisconnect-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DB_DRIVER
+        value: pg
+      # Render injects the database's INTERNAL connection string here (no SSL
+      # needed for the internal link, so PGSSL is left unset).
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crisisconnect-db
+          property: connectionString
+      # A strong random signing secret is generated for you.
+      - key: JWT_SECRET
+        generateValue: true
+      # Set this by hand in the dashboard (Environment tab). Leave empty to run
+      # on the offline triage heuristic instead of Claude.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Optional: lock CORS to the frontend URL once you know it.
+      - key: CORS_ORIGIN
+        value: ""
+
+  # ── Frontend (static React build served by Render's CDN) ───────────────────
+  - type: web
+    name: crisisconnect-web
+    runtime: static
+    rootDir: frontend
+    # NODE_ENV=production would skip Vite (a devDependency), so include dev deps.
+    buildCommand: npm install --include=dev && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Must match the backend service's public URL. If you rename the API
+      # service, update this to https://<that-name>.onrender.com
+      - key: VITE_API_URL
+        value: https://crisisconnect-api.onrender.com
+    routes:
+      # Single-page app: send every path to index.html so client routing works.
+      - type: rewrite
+        source: /*
+        destination: /index.html

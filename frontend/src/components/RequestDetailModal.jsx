@@ -4,6 +4,7 @@ import * as Icons from "lucide-react";
 import { MapPin, Users, FileText, AlertTriangle, User, UserCheck, Navigation, Paperclip, Camera, Sparkles, House, X, ZoomIn } from "lucide-react";
 import { REQUEST_TYPE, REQUEST_STATUS, ASSIGNMENT_STATUS, PRIORITY, priorityBand, fullDate } from "../lib/meta";
 import { requests as requestsApi } from "../api/services";
+import { mediaUrl } from "../api/client";
 import { Drawer, Badge, StatusTimeline, DetailRow, Button, Select } from "./ui";
 import LocationModal from "./LocationModal";
 import PromoteIncidentModal from "./PromoteIncidentModal";
@@ -159,7 +160,7 @@ export default function RequestDetailModal({ open, onClose, request, role = "cit
           {attachments.length ? (
             <div className="grid grid-cols-3 gap-2">
               {attachments.map((a, i) => {
-                const url = a.url || a;
+                const url = mediaUrl(a.url || a);
                 return (
                   <button key={i} type="button" onClick={() => setLightbox(url)}
                     className="group relative h-24 w-full overflow-hidden rounded-xl hairline">

@@ -6,7 +6,12 @@ const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
-app.use(cors());
+// Allow all origins by default (simple for a demo). In production you can lock
+// this down to your frontend's URL(s) by setting CORS_ORIGIN (comma-separated).
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((s) => s.trim())
+  : undefined;
+app.use(cors(corsOrigins ? { origin: corsOrigins } : undefined));
 app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));

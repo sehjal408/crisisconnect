@@ -1,7 +1,17 @@
 import axios from "axios";
 
+// In development the Vite dev-server proxies /api → the backend, so a relative
+// base works. In production the frontend and backend are separate origins, so
+// set VITE_API_URL to the backend's URL (e.g. https://crisisconnect-api.onrender.com).
+export const API_BASE = import.meta.env.VITE_API_URL || "";
+
+// Build an absolute URL for a server asset (e.g. an uploaded photo whose path is
+// stored as "/api/v1/uploads/..."). Leaves already-absolute URLs untouched.
+export const mediaUrl = (path) =>
+  !path ? path : /^https?:\/\//.test(path) ? path : `${API_BASE}${path}`;
+
 const api = axios.create({
-  baseURL: "/api/v1",
+  baseURL: `${API_BASE}/api/v1`,
 });
 
 api.interceptors.request.use((config) => {

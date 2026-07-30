@@ -5,6 +5,9 @@
   "description": "CrisisConnect API server (Express + PostgreSQL)",
   "main": "src/server.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
