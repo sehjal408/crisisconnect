@@ -146,6 +146,22 @@ checks the live site is up.)
 
 ---
 
+## 7b. Resetting the database to clean demo data
+
+Redeploying does **not** touch the database — data persists. If test data piles
+up and you want a pristine, demo-ready database again, run the reset command,
+which wipes everything and restores only the seeded demo accounts + sample data:
+
+```
+cd backend
+npm run db:reset
+```
+
+Run it against your **local** database anytime. To reset the **deployed** database,
+run it from the host's shell with the production `DATABASE_URL` set (or ask for
+help wiring it up). Tip: the easiest workflow is to do heavy testing **locally**
+and keep the **live** site clean — then you rarely need this.
+
 ## 8. Quick smoke test after deploying
 
 1. Open `https://<your-api>.onrender.com/health` → should show `{"status":"ok"}`.
