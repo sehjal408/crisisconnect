@@ -55,7 +55,7 @@ services:
       # Must match the backend service's public URL. If you rename the API
       # service, update this to https://<that-name>.onrender.com
       - key: VITE_API_URL
-        value: https://crisisconnect-api.onrender.com
+        value: https://crisisconnect-api-p7qw.onrender.com
     routes:
       # Single-page app: send every path to index.html so client routing works.
       - type: rewrite
