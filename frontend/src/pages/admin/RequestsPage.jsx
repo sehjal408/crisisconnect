@@ -97,8 +97,9 @@ export default function AdminRequestsPage() {
             const pri = band ? PRIORITY[band] : null;
             const priColor = pri ? pri.color : "#8a97a3";
             const assignedVol = r.assignment ? vols.find((v) => v.id === r.assignment.volunteer_id) : null;
+            const needsIncident = !r.incident_id && !["resolved", "closed"].includes(r.status);
             return (
-              <Card key={r.id} className="p-4 sm:p-5" hover>
+              <Card key={r.id} className={cx("p-4 sm:p-5", needsIncident && "border-l-[3px] border-l-[#ef9b3e]")} hover>
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   {/* main content — click to open the detail drawer */}
                   <div className="group flex min-w-0 flex-1 cursor-pointer gap-3.5" onClick={() => setActive(r)}>
@@ -110,6 +111,9 @@ export default function AdminRequestsPage() {
                         <p className="truncate text-[15px] font-semibold text-ink group-hover:text-teal-600">{type.label}</p>
                         {pri && <Badge tone={pri.tone} dot>{pri.label}</Badge>}
                         <Badge tone={st.tone} dot>{st.label}</Badge>
+                        {!r.incident_id && !["resolved", "closed"].includes(r.status) && (
+                          <Badge tone="amber" dot>No incident</Badge>
+                        )}
                         {r.affected_count > 1 && (
                           <span className="inline-flex items-center gap-1 text-[11.5px] text-muted"><Users size={12} /> {r.affected_count}</span>
                         )}

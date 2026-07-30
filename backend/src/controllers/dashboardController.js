@@ -8,7 +8,7 @@ async function getSummary(req, res, next) {
           COUNT(*) FILTER (WHERE status IN ('resolved', 'closed')) AS resolved
         FROM incidents`),
       pool.query(`SELECT COUNT(*) AS open FROM requests WHERE status NOT IN ('resolved', 'closed')`),
-      pool.query(`SELECT COUNT(*) AS available FROM volunteers WHERE availability = 'available'`),
+      pool.query(`SELECT COUNT(*) AS available FROM volunteers WHERE verification_status = 'verified'`),
       pool.query(`SELECT COALESCE(SUM(capacity), 0) AS total_capacity, COALESCE(SUM(available_beds), 0) AS available_beds FROM shelters`),
     ]);
 

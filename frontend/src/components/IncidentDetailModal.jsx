@@ -2,7 +2,7 @@ import { useState } from "react";
 import * as Icons from "lucide-react";
 import { MapPin, FileText, Radio, Activity, CircleDot, Navigation } from "lucide-react";
 import { SEVERITY, INCIDENT_TYPE, fullDate, titleCase } from "../lib/meta";
-import { Drawer, Badge, DetailRow } from "./ui";
+import { Drawer, Badge, Button, DetailRow } from "./ui";
 import LocationModal from "./LocationModal";
 
 export default function IncidentDetailModal({ open, onClose, incident }) {
@@ -31,17 +31,14 @@ export default function IncidentDetailModal({ open, onClose, incident }) {
           <DetailRow icon={Activity} label="Severity">{sev.label}</DetailRow>
           <DetailRow icon={Radio} label="Source">{incident.source || "—"}</DetailRow>
           {incident.status && <DetailRow icon={CircleDot} label="Status">{titleCase(incident.status)}</DetailRow>}
-          <DetailRow icon={MapPin} label="Location">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>{coords}</span>
-              {incident.latitude != null && (
-                <button onClick={() => setShowMap(true)} className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-teal-600 hover:underline">
-                  <Navigation size={12} /> View on map
-                </button>
-              )}
-            </div>
-          </DetailRow>
+          <DetailRow icon={MapPin} label="Location">{coords}</DetailRow>
         </div>
+
+        {incident.latitude != null && (
+          <Button icon={Navigation} className="mt-5 w-full" onClick={() => setShowMap(true)}>
+            Show on map
+          </Button>
+        )}
       </Drawer>
 
       <LocationModal

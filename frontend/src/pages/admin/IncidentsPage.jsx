@@ -29,6 +29,7 @@ export default function AdminIncidentsPage() {
   const [sev, setSev] = useState("all");
   const [active, setActive] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [merging, setMerging] = useState(false);
   const [feedMsg, setFeedMsg] = useState("");
   const [statusView, setStatusView] = useState("all"); // all | pending | verified | dismissed | merged
   const [dismissed, setDismissed] = useState([]);
@@ -57,13 +58,32 @@ export default function AdminIncidentsPage() {
   // Verify / dismiss a pending incident, restore a dismissed one, or unmerge a duplicate.
   async function moderate(i, kind) {
     setBusy(i.id);
+    setFeedMsg("");
     try {
       if (kind === "dismiss") await incidentsApi.dismiss(i.id);
       else if (kind === "unmerge") await incidentsApi.unmerge(i.id);
       else await incidentsApi.verify(i.id);
       await reload();
+    } catch (err) {
+      // Never leave the button silently spinning — surface what went wrong.
+      setFeedMsg(err.response?.data?.error?.message || "That action didn't go through — please try again.");
     } finally {
       setBusy(null);
+    }
+  }
+
+  // Collapse overlapping duplicate incidents on demand (no live feed required).
+  async function mergeDuplicates() {
+    setMerging(true);
+    setFeedMsg("");
+    try {
+      const { merged, released } = await incidentsApi.dedup();
+      setFeedMsg(merged ? `Merged ${merged} duplicate incident${merged > 1 ? "s" : ""}.` : "No duplicates found to merge.");
+      await reload();
+    } catch {
+      setFeedMsg("Could not merge duplicates right now.");
+    } finally {
+      setMerging(false);
     }
   }
 
@@ -97,7 +117,12 @@ export default function AdminIncidentsPage() {
         eyebrow="Monitoring"
         title="Incidents"
         subtitle="Live incidents across British Columbia — pulled from official sources."
-        actions={<Button icon={RefreshCw} onClick={refreshFeeds} loading={refreshing}>Refresh feeds</Button>}
+        actions={
+          <>
+            <Button variant="subtle" icon={GitMerge} onClick={mergeDuplicates} loading={merging}>Merge duplicates</Button>
+            <Button icon={RefreshCw} onClick={refreshFeeds} loading={refreshing}>Refresh feeds</Button>
+          </>
+        }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-teal-100 bg-teal-50/60 px-3.5 py-2 text-[12.5px]">

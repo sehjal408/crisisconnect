@@ -59,8 +59,12 @@ function shelterIcon(status) {
 
 function FitBounds({ points }) {
   const map = useMap();
+  const done = useRef(false);
   useEffect(() => {
-    if (!points.length) return;
+    // Fit once, when data first arrives. Afterwards the user drives the view
+    // (layer toggle / focus fly-to), so we don't yank it back to full bounds.
+    if (done.current || !points.length) return;
+    done.current = true;
     if (points.length === 1) map.setView(points[0], 11);
     else map.fitBounds(points, { padding: [48, 48] });
   }, [map, points]);
@@ -70,17 +74,27 @@ function FitBounds({ points }) {
 export default function CrisisMap({ incidents = [], shelters = [], height = 460, onSelectIncident, focus, className }) {
   const mapRef = useRef(null);
   const markerRefs = useRef({});
-  const [showShelters, setShowShelters] = useState(true);
+  // Shelters are a separate LAYER, off by default. Turning it on shows shelters
+  // ONLY (incidents hide), so the two never clutter each other.
+  const [showShelters, setShowShelters] = useState(false);
+  // Fit the map to whichever layer is currently visible.
   const points = useMemo(
-    () => [...incidents, ...shelters].map((p) => [p.latitude, p.longitude]).filter((p) => p[0] != null),
-    [incidents, shelters]
+    () => (showShelters ? shelters : incidents).map((p) => [p.latitude, p.longitude]).filter((p) => p[0] != null),
+    [incidents, shelters, showShelters]
   );
 
   useEffect(() => {
     if (!focus || !mapRef.current || focus.latitude == null) return;
+    // Selecting a shelter switches to the shelter layer (and vice-versa) so the
+    // chosen marker is actually visible before we fly to it.
+    setShowShelters(focus.kind === "s");
     mapRef.current.flyTo([focus.latitude, focus.longitude], 11, { duration: 0.8 });
-    const m = markerRefs.current[`${focus.kind}${focus.id}`];
-    if (m) setTimeout(() => m.openPopup(), 400);
+    const openWhenReady = () => {
+      const m = markerRefs.current[`${focus.kind}${focus.id}`];
+      if (m) m.openPopup();
+    };
+    // Wait for the layer swap + fly-to before opening the marker's popup.
+    setTimeout(openWhenReady, 700);
   }, [focus]);
 
   return (
@@ -88,24 +102,32 @@ export default function CrisisMap({ incidents = [], shelters = [], height = 460,
       className={["relative isolate overflow-hidden rounded-[20px] hairline shadow-soft", className].filter(Boolean).join(" ")}
       style={height != null ? { height } : undefined}
     >
-      {/* distinct floating shelter toggle — kept separate from the incident chips */}
+      {/* Layer switch — Incidents (default) vs. Shelters only. */}
       {shelters.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setShowShelters((v) => !v)}
-          title={showShelters ? "Hide shelters" : "Show shelters"}
-          className="absolute right-3 top-3 z-[1000] inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-white/90 px-3 py-1.5 text-[12.5px] font-semibold shadow-soft backdrop-blur transition hover:bg-white"
-          style={{ color: showShelters ? "#0f877b" : "#8a97a3" }}
-        >
-          <Home size={14} style={{ color: showShelters ? "#16a394" : "#8a97a3" }} />
-          Shelters
-          <span
-            className="grid min-w-[18px] place-items-center rounded-full px-1 text-[10.5px]"
-            style={{ background: showShelters ? "#d3f1ea" : "#eef1f5", color: showShelters ? "#0f877b" : "#8a97a3" }}
+        <div className="absolute right-3 top-3 z-[1000] inline-flex items-center gap-1 rounded-full border border-line bg-white/90 p-1 shadow-soft backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setShowShelters(false)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-semibold transition"
+            style={{ background: !showShelters ? "#1f3a5c" : "transparent", color: !showShelters ? "#fff" : "#8a97a3" }}
           >
-            {shelters.length}
-          </span>
-        </button>
+            <TriangleAlert size={13} /> Incidents
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowShelters(true)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12.5px] font-semibold transition"
+            style={{ background: showShelters ? "#16a394" : "transparent", color: showShelters ? "#fff" : "#8a97a3" }}
+          >
+            <Home size={13} /> Shelters
+            <span
+              className="grid min-w-[17px] place-items-center rounded-full px-1 text-[10.5px]"
+              style={{ background: showShelters ? "rgba(255,255,255,.25)" : "#eef1f5", color: showShelters ? "#fff" : "#8a97a3" }}
+            >
+              {shelters.length}
+            </span>
+          </button>
+        </div>
       )}
 
       <MapContainer
@@ -122,7 +144,7 @@ export default function CrisisMap({ incidents = [], shelters = [], height = 460,
         />
         <FitBounds points={points} />
 
-        {incidents.map((i) => (
+        {!showShelters && incidents.map((i) => (
           <Marker
             key={`i${i.id}`}
             ref={(el) => { if (el) markerRefs.current[`i${i.id}`] = el; }}

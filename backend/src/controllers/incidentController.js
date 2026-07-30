@@ -29,15 +29,18 @@ async function listIncidents(req, res, next) {
     const conditions = ["duplicate_of IS NULL"]; // merged duplicates never show
     const values = [];
 
-    if (isAdmin) {
-      if (!status) conditions.push(`status <> 'dismissed'`);
-    } else {
+    // Non-admins never see dismissed incidents nor unverified citizen reports.
+    if (!isAdmin) {
       conditions.push(`status <> 'dismissed'`);
       conditions.push(`NOT (status = 'pending' AND source = 'citizen')`);
     }
     if (status) {
       values.push(status);
       conditions.push(`status = $${values.length}`);
+    } else {
+      // Default view = ACTIVE incidents only: hide dismissed and anything that's
+      // resolved/closed (no longer active), so stale items drop off the map/list.
+      conditions.push(`status NOT IN ('dismissed', 'resolved', 'closed')`);
     }
     if (type) {
       values.push(type);

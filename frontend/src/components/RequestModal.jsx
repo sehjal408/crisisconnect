@@ -29,6 +29,10 @@ export default function RequestModal({ open, onClose, onCreated }) {
 
   async function submit(e) {
     e.preventDefault();
+    if (!form.address.trim()) {
+      setError("Please enter your location so responders can reach you.");
+      return;
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -88,7 +92,7 @@ export default function RequestModal({ open, onClose, onCreated }) {
             </Select>
           </Field>
 
-          <Field label="Your location" hint="Start typing and pick your address for an accurate map pin.">
+          <Field label="Your location *" hint="Required — start typing and pick your address for an accurate map pin.">
             <AddressAutocomplete
               value={form.address}
               onChange={(v) => setForm((f) => ({ ...f, address: v }))}

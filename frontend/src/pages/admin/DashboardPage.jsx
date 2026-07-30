@@ -14,7 +14,7 @@ import { Card, Badge, PageHeader, Spinner, CountUp, AlertBanner } from "../../co
 const STATS = [
   { key: "active_incidents", label: "Active incidents", icon: TriangleAlert, tint: "#e0574b", to: "/admin/incidents" },
   { key: "open_requests", label: "Open requests", icon: ListChecks, tint: "#1f3a5c", to: "/admin/requests" },
-  { key: "available_volunteers", label: "Volunteers ready", icon: Users, tint: "#16a394", to: "/admin/requests" },
+  { key: "available_volunteers", label: "Verified volunteers", icon: Users, tint: "#16a394", to: "/admin/volunteers" },
   { key: "shelter_available_beds", label: "Shelter beds free", icon: BedDouble, tint: "#ef9b3e", to: "/admin/shelters" },
 ];
 
