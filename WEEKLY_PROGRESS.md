@@ -1,8 +1,8 @@
 # CrisisConnect — Weekly Build Log
 
-How the project progressed, week by week. This build delivers the
-**Week 8 "Midterm MVP"** milestone plus the **Week 9 AI auto-triage layer**.
-Weeks 10–13 are listed at the end as the planned remaining work (not built yet).
+How the project progressed, week by week — from design (Week 5) through the
+**final, tested, and deployed application (Week 13)**. The app is now live on the
+web and fully feature-complete.
 
 ---
 
@@ -59,20 +59,51 @@ Weeks 10–13 are listed at the end as the planned remaining work (not built yet
   Columbia (point-in-polygon). Feed incidents arrive as `pending` for an
   administrator to verify (verification is the remaining Week 10 step).
 
-### Scope note — intentionally NOT in this build (Weeks 10–13)
-To stay true to the timeline, these remain planned:
-- **Week 10 (remaining)** — live feeds are done (see Week 9 above); still to do:
-  cross-source de-duplication & admin verification of feed incidents; shelter
-  occupancy management, low-stock alerts, notifications.
-- **Week 11** — analytics charts, impact metrics, PDF/CSV export, automated tests,
-  hosted deployment.
-- **Week 12** — QA & demo polish.
-- **Week 13** — final defense.
+## Week 10 — Verification, de-duplication, shelters & notifications ✅
+- **Admin verification** of incidents, with a "visible-vs-verified" model: trusted
+  official feeds show immediately, while citizen-reported incidents stay hidden
+  until an administrator verifies them. Admins can verify, dismiss, or restore.
+- **Cross-source de-duplication** — the same event arriving from different sources
+  is detected (same type, within a short distance) and merged into a single
+  canonical incident. Reversible (unmerge), and re-runs after every feed refresh.
+- **Create-incident-from-request** — an admin can promote a citizen request into a
+  new incident and link them.
+- **Shelter management** — live occupancy/capacity, open/full/closed status,
+  one-click placement of a citizen into a bed, and automatic capacity alerts.
+- **In-app notifications** — a sidebar bell with unread counts, driven by request,
+  assignment, verification, and shelter-capacity events.
+
+## Week 11 — Analytics & attachments ✅
+- **Insights dashboard** — impact and performance metrics (open requests,
+  resolution rate, average time to assign/resolve, live incidents, shelter
+  occupancy), a 14-day request trend chart, and **CSV / PDF export**.
+- **Photo attachments** — citizens can attach photos to a request; responders view
+  them in a lightbox from the request detail.
+
+## Week 12 — Accounts, volunteer verification & automated tests ✅
+- **Richer registration + profile page** — volunteers register with skills,
+  certifications, and vehicle availability; every user has a profile to edit their
+  details and change their password.
+- **Admin volunteer verification** — admins review and verify volunteers before
+  they can be assigned, closing the volunteer-coordination loop.
+- **Automated test suite** — 28 tests (Jest + Supertest): unit tests for the AI
+  triage logic and integration tests over the real HTTP API (auth, volunteer
+  verification, request lifecycle). Run with `cd backend && npm test`.
+- UI polish, accessibility passes, and bug fixes throughout.
+
+## Week 13 — Deployment & final defense ✅
+- **Deployed to the cloud (Render)** — the database, API, and React frontend each
+  run as their own service, on a **hosted PostgreSQL** (the backend switches from
+  embedded PGlite to a real Postgres server with a single flag). Auto-redeploys on
+  every push. See `DEPLOYMENT.md` and `render.yaml`.
+- Added a `db:reset` script to restore clean demo data, plus documented env files.
+- **Final defense** — presentation deck, live end-to-end demo, and speaker script.
 
 ---
 
-## Status
-- Runs today on a real (embedded) PostgreSQL database via `npm run dev` in both
-  `backend` and `frontend` — see `README.md`.
-- Delivered through the Week 9 AI auto-triage milestone; Weeks 10–13 are the
-  planned next steps above.
+## Status — COMPLETE ✅
+- **Live on the web:** https://crisisconnect-web.onrender.com
+- Feature-complete through the Week 13 final defense, **tested** (28 automated
+  tests) and **deployed**.
+- Also runs locally with zero setup via `npm run dev` in both `backend` and
+  `frontend` (embedded PostgreSQL, no install, no API key needed) — see `README.md`.
