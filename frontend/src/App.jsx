@@ -12,7 +12,6 @@ import AdminSheltersPage from "./pages/admin/SheltersPage";
 import AdminIncidentsPage from "./pages/admin/IncidentsPage";
 import AdminInsightsPage from "./pages/admin/InsightsPage";
 import AdminVolunteersPage from "./pages/admin/VolunteersPage";
-import CommandCenterPage from "./pages/admin/CommandCenterPage";
 import ProfilePage from "./pages/ProfilePage";
 
 const HOME_BY_ROLE = { citizen: "/map", volunteer: "/volunteer", admin: "/admin" };
@@ -49,7 +48,6 @@ export default function App() {
       <Route path="/admin/incidents" element={guard(["admin"], <AdminIncidentsPage />)} />
       <Route path="/admin/volunteers" element={guard(["admin"], <AdminVolunteersPage />)} />
       <Route path="/admin/insights" element={guard(["admin"], <AdminInsightsPage />)} />
-      <Route path="/admin/command" element={guard(["admin"], <CommandCenterPage />)} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

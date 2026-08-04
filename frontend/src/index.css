@@ -354,17 +354,6 @@ h1, h2, h3, h4 {
   .animate-rise, .animate-page { animation-duration: 0.01s; }
 }
 
-/* ---- Command Center (3D ops room) HUD ----------------------------------- */
-/* CRT scanlines — very faint, sells the "control room display" feel */
-.cmd-scanlines {
-  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay;
-}
-/* bottom feed ticker — content is duplicated once, so -50% loops seamlessly */
-.cmd-ticker { display: inline-block; animation: cmd-ticker 60s linear infinite; }
-@keyframes cmd-ticker { to { transform: translateX(-50%); } }
-@media (prefers-reduced-motion: reduce) { .cmd-ticker { animation: none; } }
-
 /* Print / "Save as PDF" — content only (drop the shell chrome and effects). */
 @media print {
   aside, header.glass { display: none !important; }
