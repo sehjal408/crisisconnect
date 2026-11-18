@@ -11,7 +11,7 @@ making the final call.
 *(hosted on a free tier — the first load may take ~30–60s while the server wakes up)*
 
 > Built by **Team SkillSpark** — Balraj Singh, Sehjalpreet Kaur, Aarti Pandya —
-> as a full-stack applied research project at Douglas College (CSIS 4495).
+> as a full-stack applied research project at Douglas College (CSIS 4495 – Applied Research Project, Summer 2026).
 
 ---
 
