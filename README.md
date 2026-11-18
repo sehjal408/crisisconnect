@@ -135,8 +135,6 @@ backend/   Node.js + Express + JWT + bcrypt
   src/routes, src/controllers, src/middleware, src/services (AI triage, feeds)
   db/schema.sql, db/seed.sql
   tests/                 Jest + Supertest
-
-docs/        ERD, wireframes
 ```
 
 ---
