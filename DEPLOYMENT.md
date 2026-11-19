@@ -137,9 +137,11 @@ checks the live site is up.)
 - **Backend sleeps when idle.** On the free plan the API "spins down" after ~15
   minutes of no traffic; the next visit takes ~30–60s to wake it. Fine for a demo
   — just open the site a minute before you present.
-- **Free database has a time limit.** Render's free Postgres expires after a set
-  period. For something longer-lived, use **Neon** (see below) as the database and
-  keep the backend/frontend on Render.
+- **Free database has a time limit.** Render's free Postgres expires after 30
+  days, which took the original demo offline. The live demo now runs on the
+  embedded PGlite database instead (`DB_DRIVER=pglite` in `render.yaml`), so it
+  never expires; demo data is re-seeded whenever the free instance restarts. For
+  data that must persist, use **Neon** (see below) with `DB_DRIVER=pg`.
 - **Demo accounts are public.** Anyone with the link can log in with the seeded
   accounts. That's intended for a class demo; for a truly public app you'd disable
   the seed and remove test data first.

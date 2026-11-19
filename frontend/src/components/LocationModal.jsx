@@ -74,7 +74,7 @@ export default function LocationModal({ open, onClose, latitude, longitude, addr
             <div className="grid h-full place-items-center"><Spinner label="Locating…" /></div>
           ) : coords ? (
             <MapContainer key={coords.join(",")} center={coords} zoom={14} scrollWheelZoom style={{ height: "100%", width: "100%" }}>
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution="&copy; OpenStreetMap &copy; CARTO" />
+              <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
               <Marker position={coords} icon={pinIcon}>{address && <Popup>{address}</Popup>}</Marker>
             </MapContainer>
           ) : (
