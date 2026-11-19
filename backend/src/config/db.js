@@ -36,10 +36,26 @@ if (USE_PG) {
     exec: (sql) => pool.query(sql),
   };
 } else {
+  const fs = require("fs");
   const DATA_DIR = process.env.PGLITE_DIR || path.join(__dirname, "..", "..", ".pgdata");
+  // An empty, already-initialized PGlite cluster. Starting from it skips
+  // initdb, which roughly halves peak memory on a fresh boot (so the API fits
+  // in a 512 MB free-tier instance, where the disk starts empty on every deploy).
+  const BASE_BUNDLE = path.join(__dirname, "..", "..", "db", "pglite-base.tgz");
   let db = null;
   const ready = (async () => {
     const { PGlite } = await import("@electric-sql/pglite");
+    const isFresh = !fs.existsSync(path.join(DATA_DIR, "PG_VERSION"));
+    if (isFresh && fs.existsSync(BASE_BUNDLE)) {
+      try {
+        db = new PGlite(DATA_DIR, { loadDataDir: new Blob([fs.readFileSync(BASE_BUNDLE)]) });
+        await db.waitReady;
+        return db;
+      } catch (err) {
+        console.warn("Could not start from the PGlite base bundle; running initdb instead:", err.message);
+        fs.rmSync(DATA_DIR, { recursive: true, force: true });
+      }
+    }
     db = new PGlite(DATA_DIR);
     await db.waitReady;
     return db;

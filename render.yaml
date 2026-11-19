@@ -26,6 +26,10 @@ services:
       # external PostgreSQL server (e.g. Neon) instead.
       - key: DB_DRIVER
         value: pglite
+      # Keep the JS heap small so the whole process stays well under the free
+      # plan's 512 MB (PGlite boots from backend/db/pglite-base.tgz to skip initdb).
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=192
       # A strong random signing secret is generated for you.
       - key: JWT_SECRET
         generateValue: true
